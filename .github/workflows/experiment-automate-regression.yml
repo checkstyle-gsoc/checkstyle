@@ -290,8 +290,8 @@ jobs:
         run: |
           mkdir -p .ci-temp
           if [ -z "$MSG" ]; then
-            JOBS_LINK="https://github.com/checkstyle/checkstyle/actions/runs/${{github.run_id}}"
-            API_LINK="https://api.github.com/repos/checkstyle/checkstyle/actions/runs/"
+            JOBS_LINK="https://github.com/checkstyle-gsoc/checkstyle/actions/runs/${{github.run_id}}"
+            API_LINK="https://api.github.com/repos/checkstyle-gsoc/checkstyle/actions/runs/"
             API_LINK="${API_LINK}${{github.run_id}}/jobs"
 
             curl --fail-with-body -X GET "${API_LINK}" \
