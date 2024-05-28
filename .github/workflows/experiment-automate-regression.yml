@@ -258,61 +258,66 @@ jobs:
         env:
           LABEL: ${{ needs.parse_body.outputs.report_label }}
         run: |
-          bash
-          TIME=$(date +%Y%H%M%S)
+          echo "Starting AWS S3 copy operation..."
+          TIME=$(date +%Y%m%d%H%M%S)
           FOLDER="${{needs.parse_body.outputs.commit_sha}}_$TIME"
           DIFF="./.ci-temp/contribution/checkstyle-tester/reports/diff"
           LINK="https://${{env.AWS_BUCKET_NAME}}.s3.${{env.AWS_REGION}}.amazonaws.com"
-          aws s3 cp $DIFF "s3://${{env.AWS_BUCKET_NAME}}/$FOLDER/reports/diff/" --recursive
+          aws s3 cp $DIFF "s3://${{env.AWS_BUCKET_NAME}}/$FOLDER/reports/diff/" --recursive --debug
+          RET_STATUS=$?
+          if [ $RET_STATUS -eq 0 ]; then
+            echo "AWS S3 copy successful."
+          else
+            echo "AWS S3 copy failed with status $RET_STATUS."
+          fi
           if [ -n "$LABEL" ]; then
             echo "$LABEL: " > .ci-temp/message
           fi
-          echo "$LINK/$FOLDER/reports/diff/index.html" >> .ci-temp/message
+          REPORT_URL="$LINK/$FOLDER/reports/diff/index.html"
+          echo "Generated report URL: $REPORT_URL"
+          echo "$REPORT_URL" >> .ci-temp/message
+          echo "Report link appended to message file."
 
       - name: Set output
         id: out
         run: |
-          ./.ci/append-to-github-output.sh "message" "$(cat .ci-temp/message)"
+          echo "Setting output from message file..."
+          MESSAGE_CONTENT=$(cat .ci-temp/message)
+          echo "::set-output name=message::$MESSAGE_CONTENT"
+          echo "Output set: $MESSAGE_CONTENT"
 
-  # should be always last step
   send_message:
     runs-on: ubuntu-latest
-    needs: [ make_report ]
+    needs: [make_report]
     if: failure() || success()
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
 
       - name: Get message
         env:
           MSG: ${{ needs.make_report.outputs.message }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p .ci-temp
+          echo "Fetching message for commenting on PR..."
           if [ -z "$MSG" ]; then
+            echo "MSG is empty, fetching job details to identify the failure..."
             JOBS_LINK="https://github.com/checkstyle-gsoc/checkstyle/actions/runs/${{github.run_id}}"
-            API_LINK="https://api.github.com/repos/checkstyle-gsoc/checkstyle/actions/runs/"
-            API_LINK="${API_LINK}${{github.run_id}}/jobs"
-
+            API_LINK="https://api.github.com/repos/checkstyle-gsoc/checkstyle/actions/runs/${{github.run_id}}/jobs"
             curl --fail-with-body -X GET "${API_LINK}" \
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: token $GITHUB_TOKEN" \
               -o .ci-temp/info.json
-
             jq '.jobs' .ci-temp/info.json > ".ci-temp/jobs"
             jq '.[] | select(.conclusion == "failure") | .name' .ci-temp/jobs > .ci-temp/job_name
             jq '.[] | select(.conclusion == "failure") | .steps' .ci-temp/jobs > .ci-temp/steps
             jq '.[] | select(.conclusion == "failure") | .name' .ci-temp/steps > .ci-temp/step_name
+            echo "Determined failed job and step, writing to message file..."
             echo "Report generation failed on phase $(cat .ci-temp/job_name)," > .ci-temp/message
             echo "step $(cat .ci-temp/step_name).<br>Link: $JOBS_LINK" >> .ci-temp/message
-          else
-            echo "$MSG" > .ci-temp/message
+            MSG=$(cat .ci-temp/message)
           fi
-
-      - name: Set message
-        id: out
-        run: |
-          ./.ci/append-to-github-output.sh "message" "$(cat .ci-temp/message)"
+          echo "Final message for PR comment: $MSG"
 
       - name: Comment PR
         uses: checkstyle/contribution/comment-action@master
