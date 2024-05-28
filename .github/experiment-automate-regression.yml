@@ -93,6 +93,7 @@ jobs:
           fi
           echo "MODULE_NAME=${MODULE_NAME}" >> $GITHUB_ENV
           echo "CONFIG_TYPE=${CONFIG_TYPE}" >> $GITHUB_ENV
+          
       - name: Extract and Modify Module Configuration using grep/sed
         run: |
           CONFIG_FILE="./config/regression-config/${{ env.MODULE_NAME }}Config.xml"
@@ -129,6 +130,7 @@ jobs:
           # Optionally, replace the original file with the updated temporary file after successful modifications
           # mv $TEMP_XML_FILE $TARGET_XML_FILE
           # echo "Original my_check.xml has been updated successfully."
+          
       - name: Getting PR description
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
@@ -145,6 +147,7 @@ jobs:
               -o .ci-temp/info.json
           jq --raw-output .head.ref .ci-temp/info.json > .ci-temp/branch
           jq --raw-output .head.sha .ci-temp/info.json > .ci-temp/commit_sha
+          
       - name: Set branch
         id: branch
         run: |
@@ -164,6 +167,7 @@ jobs:
           FORK_REPO_GIT_URL="https://github.com/$USER_LOGIN/checkstyle.git"
           git remote add forked "$FORK_REPO_GIT_URL"
           git fetch forked
+          
       - name: Setup local maven cache
         uses: actions/cache@v4
         with:
@@ -185,6 +189,14 @@ jobs:
       - name: Prepare environment
         run: |
           sudo apt install groovy
+          
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}    
+          
       - name: Setup local maven cache
         uses: actions/cache@v2
         with:
@@ -194,6 +206,7 @@ jobs:
       - name: Verify project.properties and my_check.xml
         run: |
           ls -la .ci-temp/contribution/checkstyle-tester/
+          
       - name: Fetch and prepare configuration files
         run: |
           # Fetch project.properties
@@ -204,13 +217,13 @@ jobs:
           fi
           # Move project.properties to required directory
           mv .ci-temp/project.properties ./.ci-temp/contribution/checkstyle-tester/
-          # Fetch my_check.xml from Gist
           echo "Copying TARGET_XML_FILE to diff-config.xml"
           cp temp.xml .ci-temp/contribution/checkstyle-tester/diff-config.xml
           if [ ! -f .ci-temp/contribution/checkstyle-tester/diff-config.xml ]; then
             echo "Failed to fetch diff-config.xml"
             exit 1
           fi
+          
       - name: Generate report
         env:
           BRANCH: ${{ steps.branch.outputs.ref }}
