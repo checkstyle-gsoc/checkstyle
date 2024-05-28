@@ -71,7 +71,7 @@ jobs:
           MODULE_NAME: ${{ env.MODULE_NAME }}
 
   make_report:
-    if: contains(github.event.comment.body, 'Perform regression testing for config')
+    if: contains(github.event.comment.body, 'Perform regression testings for config')
     runs-on: ubuntu-latest
     outputs:
       branch: ${{ steps.branch.outputs.ref }}
