@@ -28,6 +28,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Echo GitHub Actions Run Link
+        run: |
+          echo "Current run link: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
       - name: Extract module name and set as env var
         run: |
           echo "Comment body: ${{ github.event.comment.body }}"
