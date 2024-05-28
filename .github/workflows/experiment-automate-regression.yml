@@ -237,7 +237,7 @@ jobs:
           
       - name: Generate report
         env:
-          BRANCH: ${{ needs.parse_body.outputs.branch }}
+          BRANCH: ${{ steps.branch.outputs.ref }}
         run: |
           cd .ci-temp/contribution/checkstyle-tester
           bash
