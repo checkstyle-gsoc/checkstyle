@@ -1,4 +1,4 @@
-name: Automated Regression Report Generation
+name: Experiment Regression Report Generation
 env:
   AWS_REGION: ap-south-1
   AWS_BUCKET_NAME: "chesktyler-reports"
