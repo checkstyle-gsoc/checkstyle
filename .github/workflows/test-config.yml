@@ -38,6 +38,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: checkstyle/test-configs
+          ref: relentless-pursuit:main
           path: .ci/temp/test-configs
           token: ${{ secrets.GITHUB_TOKEN }}
 
