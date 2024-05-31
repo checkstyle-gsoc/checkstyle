@@ -44,7 +44,11 @@ jobs:
 
       - name: Copy JAR to Test Configs
         run: cp .ci/temp/checkstyle-repo/XMLParsing.jar .ci/temp/test-configs/script/
-
+        
+      - name: Install Groovy
+        run: |
+          sudo apt install groovy
+          
       - name: Run Groovy Script
         run: cd .ci/temp/test-configs/script && groovy generateConfigs.groovy
 
