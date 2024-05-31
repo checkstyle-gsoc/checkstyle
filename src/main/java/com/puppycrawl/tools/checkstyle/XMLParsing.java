@@ -10,7 +10,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 
-public class XMLParser {
+public class XMLParsing {
     public static void main(String[] args) throws Exception {
         if (args.length < 2) {
             System.out.println("Usage: java XMLParser <xmlFilePath> <moduleName>");
