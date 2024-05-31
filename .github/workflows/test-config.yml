@@ -34,11 +34,11 @@ jobs:
           ls -al . # Debugging output to verify files and paths
           ls -al com/puppycrawl/tools/checkstyle # Additional check to ensure the class file exists
 
-      - name: Checkout Test Configs Repository
+      - name: Checkout Test Configs Repository from Fork
         uses: actions/checkout@v2
         with:
-          repository: checkstyle/test-configs
-          ref: relentless-pursuit:main
+          repository: relentless-pursuit/test-configs
+          ref: main
           path: .ci/temp/test-configs
           token: ${{ secrets.GITHUB_TOKEN }}
 
