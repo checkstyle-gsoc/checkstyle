@@ -13,7 +13,7 @@ jobs:
       - name: Setup Directories
         run: |
           mkdir -p .ci/temp/checkstyle-repo
-          mkdir -p .ci/temp/test-configs
+          mkdir -p .ci/temp/test-configs/script
 
       - name: Checkout code
         uses: actions/checkout@v2
@@ -29,9 +29,10 @@ jobs:
       - name: Build Java XML Parser
         run: |
           cd .ci/temp/checkstyle-repo
-          javac -d . src/main/java/com/puppycrawl/tools/checkstyle/XMLParser.java
-          jar cvfe XMLParser.jar com.puppycrawl.tools.checkstyle.XMLParser -C . com/puppycrawl/tools/checkstyle/XMLParsing.class
-          ls -al . # Debugging output to verify files
+          javac -d . src/main/java/com/puppycrawl/tools/checkstyle/XMLParsing.java
+          jar cvfe XMLParser.jar com.puppycrawl.tools.checkstyle.XMLParsing -C . com/puppycrawl/tools/checkstyle/XMLParsing.class
+          ls -al . # Debugging output to verify files and paths
+          ls -al com/puppycrawl/tools/checkstyle # Additional check to ensure the class file exists
 
       - name: Checkout Test Configs Repository
         uses: actions/checkout@v2
