@@ -26,11 +26,11 @@ jobs:
           java-version: 11
           distribution: 'temurin'
 
-      - name: Build Java XML Parser
+      - name: Build Java XML Parsing
         run: |
           cd .ci/temp/checkstyle-repo
           javac -d . src/main/java/com/puppycrawl/tools/checkstyle/XMLParsing.java
-          jar cvfe XMLParser.jar com.puppycrawl.tools.checkstyle.XMLParsing -C . com/puppycrawl/tools/checkstyle/XMLParsing.class
+          jar cvfe XMLParsing.jar com.puppycrawl.tools.checkstyle.XMLParsing -C . com/puppycrawl/tools/checkstyle/XMLParsing.class
           ls -al . # Debugging output to verify files and paths
           ls -al com/puppycrawl/tools/checkstyle # Additional check to ensure the class file exists
 
@@ -42,7 +42,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Copy JAR to Test Configs
-        run: cp .ci/temp/checkstyle-repo/XMLParser.jar .ci/temp/test-configs/script/
+        run: cp .ci/temp/checkstyle-repo/XMLParsing.jar .ci/temp/test-configs/script/
 
       - name: Run Groovy Script
         run: cd .ci/temp/test-configs/script && groovy generateConfigs.groovy
