@@ -116,6 +116,7 @@ import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
  * <li>
  * {@code annotation.location.alone}
  * </li>
+ *
  * </ul>
  *
  * @since 6.0
