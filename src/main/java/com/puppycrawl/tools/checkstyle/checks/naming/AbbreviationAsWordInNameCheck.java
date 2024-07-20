@@ -158,6 +158,7 @@ public class AbbreviationAsWordInNameCheck extends AbstractCheck {
     private int allowedAbbreviationLength =
             DEFAULT_ALLOWED_ABBREVIATIONS_LENGTH;
 
+
     /**
      * Specify abbreviations that must be skipped for checking.
      */
