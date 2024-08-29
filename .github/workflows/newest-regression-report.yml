@@ -561,7 +561,8 @@ jobs:
       download_configs,
       make_report ]
     if: always()
-      && (needs.make_report.outputs.message != ''
+      && (needs.make_report.result == 'failure'
+          || needs.make_report.outputs.message != ''
           || needs.download_configs.result == 'failure'
           || needs.handle_generated_config_bundle.result == 'failure')
     steps:
