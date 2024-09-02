@@ -436,18 +436,15 @@ jobs:
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: token $GITHUB_TOKEN" \
               -o .ci-temp/info.json
-
-          jq --raw-output .head.ref .ci-temp/info.json > .ci-temp/branch
-          jq --raw-output .head.sha .ci-temp/info.json > .ci-temp/commit_sha
-
-          ./.ci/append-to-github-output.sh "ref" "$(cat .ci-temp/branch)"
-          # shellcheck disable=SC2002
-          ./.ci/append-to-github-output.sh "commit_sha" "$(cat .ci-temp/commit_sha | cut -c 1-7)"
-
-          echo "GITHUB_OUTPUT:"
-          # need to 'echo' to see output in Github CI
-          # shellcheck disable=SC2005
-          echo "$(cat "$GITHUB_OUTPUT")"
+      
+          BRANCH=$(jq --raw-output .head.ref .ci-temp/info.json)
+          COMMIT_SHA=$(jq --raw-output .head.sha .ci-temp/info.json | cut -c 1-7)
+      
+          echo "BRANCH=$BRANCH" >> $GITHUB_OUTPUT
+          echo "COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_OUTPUT
+      
+          echo "Branch: $BRANCH"
+          echo "Commit SHA: $COMMIT_SHA"
 
       - name: Cache config files
         uses: actions/cache@v4
