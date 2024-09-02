@@ -565,6 +565,11 @@ jobs:
           CONFIG_FILE="$GITHUB_WORKSPACE/.ci-temp/diff_config.xml"
           PROJECTS_FILE="$GITHUB_WORKSPACE/.ci-temp/project.properties"
       
+          echo "Current directory: $(pwd)"
+          echo "BRANCH: $BRANCH"
+          echo "REPO: $REPO"
+          echo "BASE_BRANCH: $BASE_BRANCH"
+
           java -jar diff-java-tool-all.jar \
             --localGitRepo "$REPO" \
             --baseBranch "$BASE_BRANCH" \
