@@ -559,7 +559,7 @@ jobs:
           CONFIG_FILE="$GITHUB_WORKSPACE/.ci-temp/diff_config.xml"
           PROJECTS_FILE="$GITHUB_WORKSPACE/.ci-temp/project.properties"
       
-          java -jar diff-java-tool.jar \
+          java -jar diff-java-tool-all.jar \
             --localGitRepo "$REPO" \
             --baseBranch "$BASE_BRANCH" \
             --patchBranch "$REF" \
