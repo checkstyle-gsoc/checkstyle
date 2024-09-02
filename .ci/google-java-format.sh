@@ -13,7 +13,6 @@ INPUT_PATHS=($(find src/it/resources/com/google/checkstyle/test/ -name "Input*.j
     | grep -v "rule734nonrequiredjavadoc/InputInvalidJavadocPosition.java" \
     | grep -v "rule53camelcase/InputCamelCaseDefined.java" \
     | grep -v "rule522classnames/InputClassNames.java" \
-    | grep -v "rule411optionalbracesusage/InputUseOfOptionalBraces.java" \
     | grep -v "rule412nonemptyblocks/InputNonemptyBlocksLeftRightCurly.java" \
     | grep -v "rule412nonemptyblocks/InputLeftCurlyAnnotations.java" \
     | grep -v "rule412nonemptyblocks/InputLeftCurlyMethod.java" \
@@ -48,9 +47,7 @@ INPUT_PATHS=($(find src/it/resources/com/google/checkstyle/test/ -name "Input*.j
     | grep -v "rule462horizontalwhitespace/InputGenericWhitespace.java" \
     | grep -v "rule487modifiers/InputModifierOrder.java" \
     | grep -v "rule4821onevariableperline/InputOneVariablePerDeclaration.java" \
-    | grep -v "rule4822declaredwhenneeded/InputDeclaredWhenNeeded.java" \
     | grep -v "rule4841indentation/ClassWithChainedMethods.java" \
-    | grep -v "rule4842fallthrough/InputFallThrough.java" \
     | grep -v "rule485annotations/InputAnnotationLocation.java" \
     | grep -v "rule485annotations/InputAnnotationLocationVariables.java" \
     | grep -v "rule4852classannotations/InputClassAnnotations.java" \
@@ -58,7 +55,6 @@ INPUT_PATHS=($(find src/it/resources/com/google/checkstyle/test/ -name "Input*.j
     | grep -v "rule4854fieldannotations/InputFieldAnnotations.java" \
     | grep -v "rule4861blockcommentstyle/InputCommentsIndentation.*.java" \
     | grep -v "rule3sourcefile/InputSourceFileStructure.java" \
-    | grep -v "rule331nowildcard/InputNoWildcardImports.java" \
     | grep -v "rule332nolinewrap/InputNoLineWrapping.java" \
     | grep -v "rule333orderingandspacing/InputOrderingAndSpacing1.java" \
     | grep -v "rule333orderingandspacing/InputOrderingAndSpacing2.java" \

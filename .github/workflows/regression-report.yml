@@ -35,7 +35,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.issue.number }}
+  group: ${{ github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -247,7 +247,7 @@ jobs:
           fileName: "extractor-all-${{env.EXTRACTOR_VERSION}}.jar"
 
       - name: Set up Java 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -304,6 +304,7 @@ jobs:
     outputs:
       config_link: ${{ steps.parse_description.outputs.config_link }}
       projects_link: ${{ steps.parse_description.outputs.projects_link }}
+      report_label: ${{ steps.parse_description.outputs.report_label }}
     steps:
       - name: Restore Master Checkstyle Checkout
         uses: actions/cache@v4
@@ -351,6 +352,7 @@ jobs:
     outputs:
       branch: ${{ steps.set_branch.outputs.ref }}
       commit_sha: ${{ steps.set_branch.outputs.commit_sha }}
+      report_label: ${{ needs.handle_configs_in_pr_description.outputs.report_label }}
     steps:
       - name: Restore Master Checkstyle Checkout
         uses: actions/cache@v4
@@ -519,6 +521,8 @@ jobs:
           fi
 
       - name: Copy Report to AWS S3 Bucket
+        env:
+          LABEL: ${{ needs.download_configs.outputs.report_label }}
         run: |
           bash
           TIME=$(date +%Y%H%M%S)
@@ -561,7 +565,8 @@ jobs:
       download_configs,
       make_report ]
     if: always()
-      && (needs.make_report.outputs.message != ''
+      && (needs.make_report.result == 'failure'
+          || needs.make_report.outputs.message != ''
           || needs.download_configs.result == 'failure'
           || needs.handle_generated_config_bundle.result == 'failure')
     steps:
@@ -572,6 +577,7 @@ jobs:
         env:
           MSG: ${{ needs.make_report.outputs.message }}
           DOWNLOAD_RESULT: ${{ needs.download_configs.result }}
+          MAKE_REPORT_RESULT: ${{ needs.make_report.result }}
           GENERATED_CONFIG_RESULT: ${{ needs.handle_generated_config_bundle.result }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -582,7 +588,7 @@ jobs:
               echo "Failed to download or process the specified configuration(s)."
               echo "Error details: $DOWNLOAD_ERROR"
               echo "<br>Please ensure you've used one of the following commands correctly:"
-              echo "- 'GitHub, generate report for <config_name>'"
+              echo "- 'GitHub, generate report for <config_bundle_path>'"
               echo "- 'GitHub, generate report by config from <file_path>'"
               echo "- 'GitHub, generate report for configs in PR description'"
               echo "<br>And check that all specified configs or files exist and are valid."
@@ -593,6 +599,11 @@ jobs:
               echo "Failed to generate config from the specified file."
               echo "Please ensure the file exists and the path is correct."
               echo "<br>Usage: 'GitHub, generate report by config from <file_path>'"
+              echo "<br>Link: $JOBS_LINK"
+            } > .ci-temp/message
+          elif [ "$MAKE_REPORT_RESULT" == "failure" ]; then
+            {
+              echo "Report generation failed. Please check the logs for more details."
               echo "<br>Link: $JOBS_LINK"
             } > .ci-temp/message
           elif [ -z "$MSG" ]; then
