@@ -535,13 +535,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Print configurations
-        run: |
-          echo "Printing configuration files:"
-          cat .ci-temp/*.xml
-          cat .ci-temp/project.properties
-          echo "Configuration files printed"
-
       - name: Generate report
         env:
           BRANCH: ${{ needs.download_configs.outputs.branch }}
