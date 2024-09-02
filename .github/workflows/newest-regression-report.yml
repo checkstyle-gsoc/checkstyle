@@ -446,6 +446,13 @@ jobs:
           path: .ci-temp/checkstyle
           key: "${{ env.CACHE_KEY_MASTER }}"
 
+      - name: Log Checkstyle root cache contents
+        run: |
+          echo "Checkstyle root cache contents:"
+          ls -R .ci-temp/checkstyle
+          echo "Content of key configuration files:"
+          cat .ci-temp/checkstyle/config/checkstyle_checks.xml || echo "File not found"
+
       - name: Restore PR Checkout
         uses: actions/cache@v4
         with:
@@ -460,6 +467,13 @@ jobs:
             .ci-temp/project.properties
           key: ${{ env.CACHE_KEY_CONFIG_FILES }}
 
+      - name: Log config files cache contents
+        run: |
+          echo "Config files cache contents:"
+          ls -l .ci-temp/*.xml .ci-temp/project.properties
+          echo "Content of diff_config.xml:"
+          cat .ci-temp/diff_config.xml || echo "File not found"
+    
       - name: Set upstream
         run: |
           bash
