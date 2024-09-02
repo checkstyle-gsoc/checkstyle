@@ -22,7 +22,7 @@ env:
   CACHE_KEY_PR: "simple-cache-key-PR-${{ github.sha }}"
   CACHE_KEY_MASTER: "simple-cache-key-MASTER-${{ github.sha }}"
   CACHE_KEY_CONTRIBUTION: "simple-cache-key-CONTRIBUTION-${{ github.sha }}"
-  CACHE_KEY_CONFIG_FILES: "config-files-${{ github.sha }}-${{ github.event.comment.id }}"
+  CACHE_KEY_CONFIG_FILES: "config-files-${{ github.sha }}"
   CACHE_KEY_GENERATED_CONFIGS: "generated-configs-${{ github.sha }}"
   GENERATED_CONFIGS_PATH: generated_configs
 
@@ -469,6 +469,13 @@ jobs:
         with:
           path: .ci-temp/checkstyle
           key: "${{ env.CACHE_KEY_MASTER }}"
+
+      - name: Log Checkstyle root cache contents
+        run: |
+          echo "Checkstyle root cache contents:"
+          ls -R .ci-temp/checkstyle
+          echo "Content of key configuration files:"
+          cat .ci-temp/checkstyle/config/checkstyle_checks.xml || echo "File not found"
 
       - name: Restore PR Checkout
         uses: actions/cache@v4
