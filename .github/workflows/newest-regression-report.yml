@@ -22,7 +22,7 @@ env:
   CACHE_KEY_PR: "simple-cache-key-PR-${{ github.sha }}"
   CACHE_KEY_MASTER: "simple-cache-key-MASTER-${{ github.sha }}"
   CACHE_KEY_CONTRIBUTION: "simple-cache-key-CONTRIBUTION-${{ github.sha }}"
-  CACHE_KEY_CONFIG_FILES: "config-files-${{ github.sha }}"
+  CACHE_KEY_CONFIG_FILES: "config-files-${{ github.sha }}-${{ github.event.comment.body }}"
   CACHE_KEY_GENERATED_CONFIGS: "generated-configs-${{ github.sha }}"
   GENERATED_CONFIGS_PATH: generated_configs
 
