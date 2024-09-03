@@ -507,6 +507,20 @@ jobs:
           fi
           echo "-------------------------------"
 
+      - name: Download DiffTool JAR
+        uses: robinraju/release-downloader@v1.8
+        with:
+          repository: "relentless-pursuit/test-configs"
+          tag: "diff-tool-1.0.0"
+          fileName: "diff-java-tool-all.jar"
+
+      - name: Download patch-diff-report-tool JAR
+        uses: robinraju/release-downloader@v1.8
+        with:
+          repository: "checkstyle/test-configs"
+          tag: "patch-diff-report-tool-0.1-SNAPSHOT"
+          fileName: "patch-diff-report-tool-0.1-SNAPSHOT-jar-with-dependencies.jar"
+ 
       - name: Generate report
         env:
           BRANCH: ${{ needs.download_configs.outputs.branch }}
