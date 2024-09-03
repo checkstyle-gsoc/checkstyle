@@ -531,8 +531,6 @@ jobs:
         env:
           BRANCH: ${{ needs.download_configs.outputs.branch }}
         run: |
-          cd .ci-temp/contribution/checkstyle-tester
-          bash
           REF="forked/$BRANCH"
           REPO="$GITHUB_WORKSPACE"
           BASE_BRANCH="upstream/master"
