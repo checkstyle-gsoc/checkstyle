@@ -520,7 +520,13 @@ jobs:
           repository: "checkstyle/test-configs"
           tag: "patch-diff-report-tool-0.1-SNAPSHOT"
           fileName: "patch-diff-report-tool-0.1-SNAPSHOT-jar-with-dependencies.jar"
- 
+
+       - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
       - name: Generate report
         env:
           BRANCH: ${{ needs.download_configs.outputs.branch }}
