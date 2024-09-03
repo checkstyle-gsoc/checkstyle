@@ -503,6 +503,17 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Print config.xml
+        run: |
+          echo "Contents of config.xml:"
+          echo "-------------------------"
+          if [ -f .ci-temp/contribution/checkstyle-tester/diff_config.xml ]; then
+            cat .ci-temp/contribution/checkstyle-tester/diff_config.xml
+          else
+            echo "diff_config.xml not found"
+          fi
+          echo "-------------------------"
+
       - name: Generate report
         env:
           BRANCH: ${{ needs.download_configs.outputs.branch }}
