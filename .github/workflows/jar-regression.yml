@@ -547,39 +547,50 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
           
-      - name: Build Checkstyle and Generate Report
+      - name: Generate report
+        id: generate_report
         env:
-          BRANCH: ${{ needs.parse_comment.outputs.branch }}
+          BRANCH: ${{ needs.download_configs.outputs.BRANCH }}
         run: |
-          # Build Checkstyle
-          cd $GITHUB_WORKSPACE
-          mvn -Dxml.skip=true -Dpmd.skip=true -Dspotbugs.skip=true -Djacoco.skip=true -DskipTests -Dcheckstyle.skip=true -Drat.skip=true -e --no-transfer-progress --batch-mode -Pno-validations clean install
-          
-          # Generate report
+          cd .ci-temp/contribution/checkstyle-tester
+          bash
           REF="forked/$BRANCH"
-          REPO="$GITHUB_WORKSPACE"
+          REPO="${{ github.workspace }}/.ci-temp/checkstyle"
           BASE_BRANCH="upstream/master"
-          CONFIG_FILE="$GITHUB_WORKSPACE/.ci-temp/diff_config.xml"
-          PROJECTS_FILE="$GITHUB_WORKSPACE/.ci-temp/project.properties"
-      
+          export MAVEN_OPTS="-Xmx5g"
+          
+          DIFF_TOOL_JAR="${{ github.workspace }}/diff-java-tool-all.jar"
+          
           echo "Current directory: $(pwd)"
           echo "BRANCH: $BRANCH"
+          echo "REF: $REF"
           echo "REPO: $REPO"
           echo "BASE_BRANCH: $BASE_BRANCH"
-
-          java -jar diff-java-tool-all.jar \
-            --localGitRepo "$REPO" \
-            --baseBranch "$BASE_BRANCH" \
-            --patchBranch "$REF" \
-            --config "$CONFIG_FILE" \
-            --listOfProjects "$PROJECTS_FILE" \
-            --allowExcludes
+          echo "DIFF_TOOL_JAR: $DIFF_TOOL_JAR"
+          
+          if [ -f new_module_config.xml ]; then
+            java -jar $DIFF_TOOL_JAR -r "$REPO" -p "$REF" -pc new_module_config.xml -m single \
+              -l project.properties -xm "-Dcheckstyle.failsOnError=false" \
+              --allowExcludes
+          elif [ -f patch_config.xml ]; then
+            java -jar $DIFF_TOOL_JAR -r "$REPO" -b "$BASE_BRANCH" -p "$REF" -bc diff_config.xml \
+              -pc patch_config.xml -l project.properties -xm "-Dcheckstyle.failsOnError=false" \
+              --allowExcludes
+          else
+            java -jar $DIFF_TOOL_JAR -r "$REPO" -b "$BASE_BRANCH" -p "$REF" -c diff_config.xml \
+              -l project.properties -xm "-Dcheckstyle.failsOnError=false" \
+              --allowExcludes
+          fi
+          
+          if [ $? -ne 0 ]; then
+            echo "Error occurred during report generation"
+            ./.ci/append-to-github-output.sh "error" "true"
+            exit 1
+          fi
       
           # Debug output
           echo "Current directory structure:"
           find . -type d
-          echo "Contents of target directory:"
-          ls -la target/
           echo "Contents of reports directory:"
           ls -la reports/
           echo "Contents of tmp_reports directory:"
