@@ -437,21 +437,23 @@ jobs:
               -H "Authorization: token $GITHUB_TOKEN" \
               -o .ci-temp/info.json
       
-          BRANCH=$(jq --raw-output .head.ref .ci-temp/info.json)
-          COMMIT_SHA=$(jq --raw-output .head.sha .ci-temp/info.json | cut -c 1-7)
+          jq --raw-output .head.ref .ci-temp/info.json > .ci-temp/branch
+          jq --raw-output .head.sha .ci-temp/info.json | cut -c 1-7 > .ci-temp/commit_sha
       
-          echo "BRANCH=$BRANCH" >> $GITHUB_OUTPUT
-          echo "COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          echo "Branch: $(cat .ci-temp/branch)"
+          echo "Commit SHA: $(cat .ci-temp/commit_sha)"
       
-          echo "Branch: $BRANCH"
-          echo "Commit SHA: $COMMIT_SHA"
-
-      - name: Cache config files
+          echo "ref=$(cat .ci-temp/branch)" >> $GITHUB_OUTPUT
+          echo "commit_sha=$(cat .ci-temp/commit_sha)" >> $GITHUB_OUTPUT
+      
+      - name: Cache config files and branch info
         uses: actions/cache@v4
         with:
           path: |
             .ci-temp/*.xml
             .ci-temp/project.properties
+            .ci-temp/branch
+            .ci-temp/commit_sha
           key: ${{ env.CACHE_KEY_CONFIG_FILES }}
 
   make_report:
@@ -547,50 +549,43 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
           
-      - name: Generate report
-        id: generate_report
-        env:
-          BRANCH: ${{ needs.download_configs.outputs.BRANCH }}
+      - name: Build Checkstyle and Generate Report
         run: |
-          cd .ci-temp/contribution/checkstyle-tester
-          bash
+          # Read branch from file
+          BRANCH=$(cat .ci-temp/branch)
+      
+          # Build Checkstyle
+          cd $GITHUB_WORKSPACE
+          mvn -Dxml.skip=true -Dpmd.skip=true -Dspotbugs.skip=true -Djacoco.skip=true -DskipTests -Dcheckstyle.skip=true -Drat.skip=true -e --no-transfer-progress --batch-mode -Pno-validations clean install
+          
+          # Generate report
           REF="forked/$BRANCH"
-          REPO="${{ github.workspace }}/.ci-temp/checkstyle"
+          REPO="$GITHUB_WORKSPACE"
           BASE_BRANCH="upstream/master"
-          export MAVEN_OPTS="-Xmx5g"
-          
-          DIFF_TOOL_JAR="${{ github.workspace }}/diff-java-tool-all.jar"
-          
+          CONFIG_FILE="$GITHUB_WORKSPACE/.ci-temp/diff_config.xml"
+          PROJECTS_FILE="$GITHUB_WORKSPACE/.ci-temp/project.properties"
+      
           echo "Current directory: $(pwd)"
           echo "BRANCH: $BRANCH"
           echo "REF: $REF"
           echo "REPO: $REPO"
           echo "BASE_BRANCH: $BASE_BRANCH"
-          echo "DIFF_TOOL_JAR: $DIFF_TOOL_JAR"
-          
-          if [ -f new_module_config.xml ]; then
-            java -jar $DIFF_TOOL_JAR -r "$REPO" -p "$REF" -pc new_module_config.xml -m single \
-              -l project.properties -xm "-Dcheckstyle.failsOnError=false" \
-              --allowExcludes
-          elif [ -f patch_config.xml ]; then
-            java -jar $DIFF_TOOL_JAR -r "$REPO" -b "$BASE_BRANCH" -p "$REF" -bc diff_config.xml \
-              -pc patch_config.xml -l project.properties -xm "-Dcheckstyle.failsOnError=false" \
-              --allowExcludes
-          else
-            java -jar $DIFF_TOOL_JAR -r "$REPO" -b "$BASE_BRANCH" -p "$REF" -c diff_config.xml \
-              -l project.properties -xm "-Dcheckstyle.failsOnError=false" \
-              --allowExcludes
-          fi
-          
-          if [ $? -ne 0 ]; then
-            echo "Error occurred during report generation"
-            ./.ci/append-to-github-output.sh "error" "true"
-            exit 1
-          fi
+          echo "CONFIG_FILE: $CONFIG_FILE"
+          echo "PROJECTS_FILE: $PROJECTS_FILE"
+      
+          java -jar diff-java-tool-all.jar \
+            --localGitRepo "$REPO" \
+            --baseBranch "$BASE_BRANCH" \
+            --patchBranch "$REF" \
+            --config "$CONFIG_FILE" \
+            --listOfProjects "$PROJECTS_FILE" \
+            --allowExcludes
       
           # Debug output
           echo "Current directory structure:"
           find . -type d
+          echo "Contents of target directory:"
+          ls -la target/
           echo "Contents of reports directory:"
           ls -la reports/
           echo "Contents of tmp_reports directory:"
