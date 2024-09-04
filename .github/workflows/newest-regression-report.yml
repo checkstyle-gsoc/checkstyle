@@ -257,19 +257,30 @@ jobs:
           path: .ci-temp/checkstyle
           key: "${{ env.CACHE_KEY_MASTER }}"
   
-      - name: Set up Git
+      - name: Debug repository state
         run: |
-          cd .ci-temp/checkstyle
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
+          echo "Current directory:"
+          pwd
+          echo "Contents of current directory:"
+          ls -la
+          echo "Contents of .ci-temp directory (if it exists):"
+          ls -la .ci-temp || echo ".ci-temp does not exist"
+          echo "Git status:"
+          git status
+          echo "Current branch:"
+          git branch --show-current
+          echo "All branches:"
+          git branch -a
   
-      - name: Set up remotes and fetch PR branch
+      - name: Set up Git and checkout PR branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USER_LOGIN: ${{ github.event.issue.user.login }}
           BRANCH: ${{ needs.parse_comment.outputs.branch }}
         run: |
           cd .ci-temp/checkstyle
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
           MAIN_REPO_GIT_URL="https://github.com/checkstyle/checkstyle.git"
           FORK_REPO_GIT_URL="https://github.com/$USER_LOGIN/checkstyle.git"
           git remote add upstream "$MAIN_REPO_GIT_URL"
@@ -277,21 +288,10 @@ jobs:
           git fetch upstream
           git fetch forked
           git checkout -b "$BRANCH" "forked/$BRANCH"
-  
-      - name: Verify current branch and remote
-        run: |
-          cd .ci-temp/checkstyle
-          echo "Current branch:"
-          git branch --show-current
-          echo "Remote URL:"
-          git remote -v
-          echo "Commit SHA:"
-          git rev-parse HEAD
-        
-      - name: List files in PR branch
-        run: |
-          echo "Listing files in the PR branch:"
-          ls -R .
+          echo "Current directory after checkout:"
+          pwd
+          echo "Contents after checkout:"
+          ls -R
       
       - name: Find input file in PR branch
         id: find_input_file
