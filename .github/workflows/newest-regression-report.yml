@@ -296,19 +296,32 @@ jobs:
           INPUT_FILE="${{ needs.parse_comment.outputs.input_file }}"
           OUTPUT_DIR="${{ env.GENERATED_CONFIGS_PATH }}"
           mkdir -p "$OUTPUT_DIR"
-  
+
+          echo "Current working directory: $(pwd)"
+          echo "Contents of current directory:"
+          ls -R
+
           echo "Generating configuration for file: $INPUT_FILE"
           
           CONFIG_FILE_PATH="$OUTPUT_DIR/generated_config.xml"
-          java -jar "../extractor-all-${{env.EXTRACTOR_VERSION}}.jar" \
-            --input-file "$INPUT_FILE" \
-            --output-file "$CONFIG_FILE_PATH"
+          
+          # Construct the command
+          CMD="java -jar ../extractor-all-${{env.EXTRACTOR_VERSION}}.jar --input-file \"$INPUT_FILE\" --output-file \"$CONFIG_FILE_PATH\""
+          
+          echo "Executing command: $CMD"
+          
+          # Execute the command
+          eval $CMD
           
           echo "Generated config file at: $CONFIG_FILE_PATH"
           echo "config_link=$CONFIG_FILE_PATH" >> $GITHUB_OUTPUT
           
           # For simplicity, we'll use a default projects file
           echo "projects_link=${{ env.DEFAULT_PROJECTS_LINK }}" >> $GITHUB_OUTPUT
+
+          # Print the contents of the generated config file
+          echo "Contents of generated config file:"
+          cat "$CONFIG_FILE_PATH"
   
       - name: Cache Generated Config and Project Files
         uses: actions/cache@v4
