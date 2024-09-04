@@ -238,19 +238,6 @@ jobs:
       config_link: ${{ steps.generated_config_bundle.outputs.config_link }}
       projects_link: ${{ steps.generated_config_bundle.outputs.projects_link }}
     steps:
-      # - name: Restore PR Checkout Cache
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: .
-      #     key: "${{ env.CACHE_KEY_PR }}"
-  
-      # - name: Set PR branch as the working directory
-      #   run: |
-      #     BRANCH="${{ needs.parse_comment.outputs.branch }}"
-      #     echo "Switching to PR branch: $BRANCH"
-      #     cd "forked/$BRANCH"
-      #     echo "Current working directory: $(pwd)"
-
       - name: Checkout master branch
         uses: actions/checkout@v4
         with:
@@ -281,14 +268,23 @@ jobs:
             echo "Error: Could not fetch file content"
             exit 1
           fi
-          
-          # Create the file locally
-          mkdir -p $(dirname "checkstyle/$INPUT_FILE")
-          echo "$FILE_CONTENT" > "checkstyle/$INPUT_FILE"
-          
-          echo "File created at checkstyle/$INPUT_FILE"
-          cat "checkstyle/$INPUT_FILE"
-  
+
+          FOUND_FILE="$FOUND_FILES"
+          ./.ci/append-to-github-output.sh "input_file" "$FOUND_FILE"
+
+      - name: Download Extractor JAR
+        uses: robinraju/release-downloader@v1.8
+        with:
+          repository: "checkstyle/test-configs"
+          tag: "extractor-${{env.EXTRACTOR_VERSION}}"
+          fileName: "extractor-all-${{env.EXTRACTOR_VERSION}}.jar"
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
       - name: Generate config
         id: generated_config_bundle
         run: |
