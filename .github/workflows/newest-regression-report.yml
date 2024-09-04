@@ -224,11 +224,18 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
     
-      - name: List files in checked out PR
-        run: ls -R ${{ github.workspace }}
+      - name: Verify PR content
+        run: |
+          echo "Current branch: $(git branch --show-current)"
+          echo "Latest commit: $(git log -1 --oneline)"
+          echo "Files changed in this PR:"
+          git diff --name-status ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}
+          echo "Content of the specified file:"
+          cat "${{ needs.parse_comment.outputs.input_file }}" || echo "File not found"
+
   
       - name: Find input file
         id: find_input_file
@@ -238,24 +245,16 @@ jobs:
       
           echo "Looking for file: $INPUT_FILE"
           echo "Workspace: $WORKSPACE"
-          echo "Current directory structure:"
-          tree $WORKSPACE
       
-          # Search in the entire workspace, not just src
-          FOUND_FILES=$(find "$WORKSPACE" -type f -path "*$INPUT_FILE")
-      
-          echo "Found files: $FOUND_FILES"
-      
-          if [ -z "$FOUND_FILES" ]; then
+          if [ -f "$WORKSPACE/$INPUT_FILE" ]; then
+            echo "File found: $WORKSPACE/$INPUT_FILE"
+            echo "input_file=$WORKSPACE/$INPUT_FILE" >> $GITHUB_OUTPUT
+          else
             echo "Error: Could not find input file"
-            echo "Files in src directory:"
-            find "$WORKSPACE/src" -type f
+            echo "Contents of src/test/resources/com/puppycrawl/tools/checkstyle/checks/finalparameters/:"
+            ls -l $WORKSPACE/src/test/resources/com/puppycrawl/tools/checkstyle/checks/finalparameters/
             exit 1
           fi
-      
-          FOUND_FILE="$FOUND_FILES"
-          echo "Resolved input file: $FOUND_FILE"
-          echo "input_file=$FOUND_FILE" >> $GITHUB_OUTPUT
 
       - name: Download DiffTool JAR
         uses: robinraju/release-downloader@v1.8
