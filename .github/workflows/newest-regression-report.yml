@@ -87,12 +87,12 @@ jobs:
           path: .
           key: ${{ env.CACHE_KEY_MASTER }}
 
-      - name: Checkout PR
+      - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
-
+          ref: ${{ github.event.pull_request.head.ref }}
+          path: .
+          
       - name: Cache PR Checkout
         uses: actions/cache@v4
         with:
@@ -226,28 +226,23 @@ jobs:
           INPUT_FILE="${{ needs.parse_comment.outputs.input_file }}"
           WORKSPACE="${{ github.workspace }}"
       
-          echo "Looking for file: $INPUT_FILE"
-          echo "Workspace: $WORKSPACE"
-          echo "Current directory: $(pwd)"
-          echo "Directory contents:"
-          ls -R $WORKSPACE
+          echo "Looking for file: $INPUT_FILE in workspace: $WORKSPACE"
       
-          FOUND_FILES=$(find "$WORKSPACE" -type f -path "*$INPUT_FILE")
+          FOUND_FILES=$(find "$WORKSPACE/src" -type f -path "*$INPUT_FILE")
+      
+          # Add log to print all found files
+          echo "Found files: $FOUND_FILES"
       
           if [ "$(echo "$FOUND_FILES" | wc -l)" -gt 1 ]; then
             echo "Error: Multiple matching files found"
-            echo "$FOUND_FILES"
             exit 1
           elif [ -z "$FOUND_FILES" ]; then
             echo "Error: Could not find input file"
-            echo "Searched in: $WORKSPACE"
-            echo "Files in src directory:"
-            find "$WORKSPACE/src" -type f
             exit 1
           fi
       
           FOUND_FILE="$FOUND_FILES"
-          echo "Found file: $FOUND_FILE"
+          echo "Resolved input file: $FOUND_FILE"
           ./.ci/append-to-github-output.sh "input_file" "$FOUND_FILE"
 
       - name: Download DiffTool JAR
