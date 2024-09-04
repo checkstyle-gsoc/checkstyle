@@ -251,49 +251,23 @@ jobs:
       #     cd "forked/$BRANCH"
       #     echo "Current working directory: $(pwd)"
 
-      - name: Restore Master Checkstyle Checkout
-        uses: actions/cache@v4
-        with:
-          path: .ci-temp/checkstyle
-          key: "${{ env.CACHE_KEY_MASTER }}"
-  
-      - name: Debug repository state
-        run: |
-          echo "Current directory:"
-          pwd
-          echo "Contents of current directory:"
-          ls -la
-          echo "Contents of .ci-temp directory:"
-          ls -la .ci-temp
-          echo "Contents of .ci-temp/checkstyle directory:"
-          ls -la .ci-temp/checkstyle
-  
-      - name: Set up Git and checkout PR branch
+      - name: Get PR details
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          USER_LOGIN: ${{ github.event.issue.user.login }}
-          BRANCH: ${{ needs.parse_comment.outputs.branch }}
+          PR_NUMBER: ${{ github.event.issue.number }}
         run: |
-          cd .ci-temp/checkstyle
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
-          MAIN_REPO_GIT_URL="https://github.com/checkstyle/checkstyle.git"
-          FORK_REPO_GIT_URL="https://github.com/$USER_LOGIN/checkstyle.git"
-          git remote add upstream "$MAIN_REPO_GIT_URL" || true
-          git remote add forked "$FORK_REPO_GIT_URL" || true
-          git fetch upstream
-          git fetch forked
-          git checkout -b "$BRANCH" "forked/$BRANCH" || git checkout "$BRANCH"
-          echo "Current directory after checkout:"
-          pwd
-          echo "Git status:"
-          git status
-          echo "Current branch:"
-          git branch --show-current
-          echo "All branches:"
-          git branch -a
-          echo "Contents after checkout:"
-          ls -R
+          PR_DETAILS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER")
+          echo "HEAD_REPO=$(echo $PR_DETAILS | jq -r .head.repo.full_name)" >> $GITHUB_ENV
+          echo "HEAD_REF=$(echo $PR_DETAILS | jq -r .head.ref)" >> $GITHUB_ENV
+          echo "PR is from $HEAD_REPO branch $HEAD_REF"
+  
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.HEAD_REPO }}
+          ref: ${{ env.HEAD_REF }}
+          path: checkstyle-pr
       
       - name: Find input file in PR branch
         id: find_input_file
