@@ -270,11 +270,16 @@ jobs:
             exit 1
           fi
           
-          # Create a temporary file with the content
-          TEMP_FILE=$(mktemp)
+          # Create the file locally with the correct structure
+          TEMP_DIR=$(mktemp -d)
+          TEMP_FILE="$TEMP_DIR/$INPUT_FILE"
+          mkdir -p $(dirname "$TEMP_FILE")
           echo "$FILE_CONTENT" > "$TEMP_FILE"
           
-          echo "Temporary file created at: $TEMP_FILE"
+          echo "File created at: $TEMP_FILE"
+          echo "File contents:"
+          cat "$TEMP_FILE"
+          
           echo "input_file=$TEMP_FILE" >> $GITHUB_OUTPUT
 
       - name: Download Extractor JAR
