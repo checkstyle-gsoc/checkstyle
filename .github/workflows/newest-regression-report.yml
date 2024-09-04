@@ -322,13 +322,17 @@ jobs:
             "$CONFIG_FILE_PATH" \
             "$PROJECT_FILE_PATH"
           
-          # Set the config and project file paths
-          echo "config_link=$CONFIG_FILE_PATH" >> $GITHUB_OUTPUT
-          echo "projects_link=$PROJECT_FILE_PATH" >> $GITHUB_OUTPUT
+          # Set the config and project file paths using the script
+          ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
+          ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
+          
+          # Rename the config file to diff_config.xml
+          mv "$CONFIG_FILE_PATH" "$OUTPUT_DIR/diff_config.xml"
+          echo "Renamed config file to: $OUTPUT_DIR/diff_config.xml"
           
           # Print the contents of the files to the logs
-          echo "Contents of CONFIG_FILE_PATH:"
-          cat "$CONFIG_FILE_PATH"
+          echo "Contents of diff_config.xml:"
+          cat "$OUTPUT_DIR/diff_config.xml"
   
       - name: Cache Generated Config and Project Files
         uses: actions/cache@v4
