@@ -516,9 +516,23 @@ jobs:
 
       - name: Prepare environment
         run: |
-          mv .ci-temp/project.properties ./.ci-temp/contribution/checkstyle-tester/
-          mv .ci-temp/*.xml ./.ci-temp/contribution/checkstyle-tester/
-          sudo apt install groovy
+          mkdir -p .ci-temp/contribution/checkstyle-tester
+          
+          if [ -f ".ci-temp/project.properties" ]; then
+            mv .ci-temp/project.properties ./.ci-temp/contribution/checkstyle-tester/
+          else
+            echo "project.properties not found, using default"
+            curl -o ./.ci-temp/contribution/checkstyle-tester/project.properties "${{ env.DEFAULT_PROJECTS_LINK }}"
+          fi
+          
+          if [ -f ".ci-temp/diff_config.xml" ]; then
+            mv .ci-temp/diff_config.xml ./.ci-temp/contribution/checkstyle-tester/
+          else
+            echo "diff_config.xml not found, this may cause issues in the next steps"
+          fi
+          
+          sudo apt-get update
+          sudo apt-get install -y groovy
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
