@@ -254,9 +254,8 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }} # Branch name of the PR
-          repository: ${{ github.event.pull_request.head.repo.full_name }} # Forked repo full name (e.g., user/repo)
-          fetch-depth: 0
+          ref: ${{ github.ref }}
+
           
       - name: Verify current branch and remote
         run: |
