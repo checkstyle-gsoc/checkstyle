@@ -248,8 +248,7 @@ jobs:
         run: |
           BRANCH="${{ needs.parse_comment.outputs.branch }}"
           echo "Switching to PR branch: $BRANCH"
-          REPO=".ci-temp/checkstyle"
-          cd "$REPO/forked/$BRANCH"
+          cd "forked/$BRANCH"
           echo "Current working directory: $(pwd)"
       
       - name: List files in PR branch
