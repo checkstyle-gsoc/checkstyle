@@ -244,13 +244,15 @@ jobs:
           repository: checkstyle/checkstyle
           path: checkstyle
   
-      - name: Fetch file content from PR
+      - name: Find input file
+        id: find_input_file
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.issue.number }}
-          INPUT_FILE: ${{ needs.parse_comment.outputs.input_file }}
         run: |
-          # Fetch the PR details
+          INPUT_FILE="${{ needs.parse_comment.outputs.input_file }}"
+
+           # Fetch the PR details
           PR_DETAILS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER")
           
@@ -264,17 +266,15 @@ jobs:
           FILE_CONTENT=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://raw.githubusercontent.com/$HEAD_REPO/$HEAD_REF/$INPUT_FILE")
           
+          cat "$FILE_CONTENT"
+
           if [ -z "$FILE_CONTENT" ]; then
             echo "Error: Could not fetch file content"
             exit 1
           fi
-          
-          # Create the file locally
-          mkdir -p $(dirname "checkstyle/$INPUT_FILE")
-          echo "$FILE_CONTENT" > "checkstyle/$INPUT_FILE"
-          
-          echo "File created at checkstyle/$INPUT_FILE"
-          cat "checkstyle/$INPUT_FILE"
+
+          FOUND_FILE="$FILE_CONTENT"
+          ./.ci/append-to-github-output.sh "input_file" "$FOUND_FILE"
 
       - name: Download Extractor JAR
         uses: robinraju/release-downloader@v1.8
