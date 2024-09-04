@@ -130,6 +130,8 @@ jobs:
       mode: ${{ steps.parse.outputs.mode }}
       config_bundle: ${{ steps.parse.outputs.config_bundle }}
       input_file: ${{ steps.parse.outputs.input_file }}
+      branch: ${{ steps.set_branch.outputs.ref }}
+      commit_sha: ${{ steps.set_branch.outputs.commit_sha }}
     steps:
       - name: React to comment
         uses: actions/github-script@v7
@@ -142,19 +144,19 @@ jobs:
               comment_id: context.payload.comment.id,
               content: 'rocket'
             })
-
+  
       - name: Restore Master Checkstyle Checkout
         uses: actions/cache@v4
         with:
           path: .ci-temp/checkstyle
           key: "${{ env.CACHE_KEY_MASTER }}"
-
+  
       - name: Restore PR Checkout
         uses: actions/cache@v4
         with:
           path: .
           key: "${{ env.CACHE_KEY_PR }}"
-
+  
       - name: Parse comment
         id: parse
         env:
@@ -163,24 +165,41 @@ jobs:
           PATTERN_FOR_DESCRIPTION='^Git[Hh]ub, generate report for configs in PR description$'
           PATTERN_FOR='^Git[Hh]ub, generate report for'
           PATTERN_BY_CONFIG_FROM='^Git[Hh]ub, generate report by config from'
-
+  
           if [[ "$COMMENT_BODY" =~ $PATTERN_FOR_DESCRIPTION ]]; then
             ./.ci/append-to-github-output.sh "mode" "configs_in_pr_description"
-
           elif [[ "$COMMENT_BODY" =~ $PATTERN_FOR ]]; then
             ./.ci/append-to-github-output.sh "mode" "existing_config_bundle"
             CONFIG_BUNDLE=$(echo "$COMMENT_BODY" | sed -E "s/$PATTERN_FOR //g")
             ./.ci/append-to-github-output.sh "config_bundle" "$CONFIG_BUNDLE"
-
           elif [[ "$COMMENT_BODY" =~ $PATTERN_BY_CONFIG_FROM ]]; then
             ./.ci/append-to-github-output.sh "mode" "generated_config_bundle"
             INPUT_FILE=$(echo "$COMMENT_BODY" | sed -E "s/$PATTERN_BY_CONFIG_FROM //g")
             ./.ci/append-to-github-output.sh "input_file" "$INPUT_FILE"
-
           else
             echo "No recognized pattern found in '$COMMENT_BODY'."
             exit 1
-          fi
+  
+      - name: Set branch
+        id: set_branch
+        env:
+          PULL_REQUEST_URL: ${{ github.event.issue.pull_request.url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p .ci-temp
+          curl --fail-with-body -X GET "${PULL_REQUEST_URL}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -o .ci-temp/info.json
+  
+          jq --raw-output .head.ref .ci-temp/info.json > .ci-temp/branch
+          jq --raw-output .head.sha .ci-temp/info.json > .ci-temp/commit_sha
+  
+          ./.ci/append-to-github-output.sh "ref" "$(cat .ci-temp/branch)"
+          ./.ci/append-to-github-output.sh "commit_sha" "$(cat .ci-temp/commit_sha | cut -c 1-7)"
+  
+          echo "Branch: $(cat .ci-temp/branch)"
+          echo "Commit SHA: $(cat .ci-temp/commit_sha)"
 
   handle_existing_config_bundle:
     needs: [ parse_comment, checkout_and_cache ]
@@ -207,115 +226,90 @@ jobs:
           ./.ci/append-to-github-output.sh "projects_link" "$PROJECTS_LINK"
 
   handle_generated_config_bundle:
-    needs: [ parse_comment, checkout_and_cache ]
+    needs: [parse_comment, checkout_and_cache]
     if: needs.parse_comment.outputs.mode == 'generated_config_bundle'
     runs-on: ubuntu-latest
     outputs:
       config_link: ${{ steps.generated_config_bundle.outputs.config_link }}
       projects_link: ${{ steps.generated_config_bundle.outputs.projects_link }}
     steps:
-      # - name: Restore PR Checkout
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: .
-      #     key: "${{ env.CACHE_KEY_PR }}"
-
-      - name: Checkout PR
-        uses: actions/checkout@v4
+      - name: Restore PR Checkout Cache
+        uses: actions/cache@v4
         with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.ref }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-    
-      - name: Verify PR content
-        run: |
-          echo "Current branch: $(git branch --show-current)"
-          echo "Latest commit: $(git log -1 --oneline)"
-          echo "Files in PR:"
-          git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}
-          echo "Full directory structure:"
-          find .
+          path: .
+          key: "${{ env.CACHE_KEY_PR }}"
   
-      - name: Find input file
+      - name: Set PR branch as the working directory
+        run: |
+          BRANCH="${{ needs.parse_comment.outputs.branch }}"
+          echo "Switching to PR branch: $BRANCH"
+          REPO=".ci-temp/checkstyle"
+          cd "$REPO/forked/$BRANCH"
+          echo "Current working directory: $(pwd)"
+      
+      - name: List files in PR branch
+        run: |
+          echo "Listing files in the PR branch:"
+          ls -R .
+      
+      - name: Find input file in PR branch
         id: find_input_file
         run: |
           INPUT_FILE="${{ needs.parse_comment.outputs.input_file }}"
           WORKSPACE="${{ github.workspace }}"
-      
-          echo "Looking for file: $INPUT_FILE"
-          echo "Workspace: $WORKSPACE"
-          echo "Current directory: $(pwd)"
-          echo "Directory contents:"
-          ls -R $WORKSPACE
-      
-          if [ -f "$WORKSPACE/$INPUT_FILE" ]; then
-            echo "File found: $WORKSPACE/$INPUT_FILE"
-            echo "input_file=$WORKSPACE/$INPUT_FILE" >> $GITHUB_OUTPUT
-          else
+  
+          echo "Looking for file: $INPUT_FILE in workspace: $WORKSPACE"
+  
+          FOUND_FILES=$(find "$WORKSPACE/src" -type f -path "*$INPUT_FILE")
+  
+          if [ "$(echo "$FOUND_FILES" | wc -l)" -gt 1 ]; then
+            echo "Error: Multiple matching files found"
+            exit 1
+          elif [ -z "$FOUND_FILES" ]; then
             echo "Error: Could not find input file"
-            echo "Searching for similar files:"
-            find "$WORKSPACE" -name "InputFinalParameters*.java"
             exit 1
           fi
-    
-      - name: Download DiffTool JAR
+  
+          FOUND_FILE="$FOUND_FILES"
+          echo "Resolved input file: $FOUND_FILE"
+          ./.ci/append-to-github-output.sh "input_file" "$FOUND_FILE"
+  
+      - name: Download Extractor JAR
         uses: robinraju/release-downloader@v1.8
         with:
           repository: "checkstyle/test-configs"
           tag: "extractor-${{env.EXTRACTOR_VERSION}}"
           fileName: "extractor-all-${{env.EXTRACTOR_VERSION}}.jar"
-
+  
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
-
+  
       - name: Generate config
         id: generated_config_bundle
-        env:
-          DEFAULT_PROJECTS_LINK: ${{ env.DEFAULT_PROJECTS_LINK }}
         run: |
           FOUND_FILE="${{ steps.find_input_file.outputs.input_file }}"
-          BASE_PATH=".ci-temp/checkstyle"
           OUTPUT_DIR="${{ env.GENERATED_CONFIGS_PATH }}"
           mkdir -p "$OUTPUT_DIR"
-
-          echo "Original FOUND_FILE = $FOUND_FILE"
-
-          # Remove .ci-temp/checkstyle/ from the beginning of FOUND_FILE
-          RELATIVE_PATH=${FOUND_FILE#.ci-temp/checkstyle/}
-
-          echo "Processed RELATIVE_PATH = $RELATIVE_PATH"
-
-          # Generate a unique name for the config file
-          CONFIG_FILE_NAME=$(basename "$FOUND_FILE" .java)_config.xml
-          CONFIG_FILE_PATH="$OUTPUT_DIR/$CONFIG_FILE_NAME"
-
-          # Generate a name for the projects file
-          PROJECT_FILE_PATH="$OUTPUT_DIR/projects.properties"
-
-          # Run the extractor
-            java -jar extractor-all-${{env.EXTRACTOR_VERSION}}.jar \
-            "$BASE_PATH" \
-            --input-file "$RELATIVE_PATH" \
-            "$CONFIG_FILE_PATH" \
-            "$PROJECT_FILE_PATH"
-
-          # Set the config and project file paths
+  
+          echo "Generating configuration for file: $FOUND_FILE"
+          
+          CONFIG_FILE_PATH="$OUTPUT_DIR/generated_config.xml"
+          java -jar "extractor-all-${{env.EXTRACTOR_VERSION}}.jar" \
+            --input-file "$FOUND_FILE" \
+            --output-file "$CONFIG_FILE_PATH"
+          
+          echo "Generated config file at: $CONFIG_FILE_PATH"
           ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
-          ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
-
-          # Print the contents of the files to the logs
-          echo "Contents of CONFIG_FILE_PATH:"
-          cat "$CONFIG_FILE_PATH"
-
+  
       - name: Cache Generated Config and Project Files
         uses: actions/cache@v4
         with:
           path: ${{ env.GENERATED_CONFIGS_PATH }}
           key: ${{ env.CACHE_KEY_GENERATED_CONFIGS }}
-
+        
   handle_configs_in_pr_description:
     needs: [ parse_comment, checkout_and_cache ]
     if: needs.parse_comment.outputs.mode == 'configs_in_pr_description'
@@ -341,14 +335,6 @@ jobs:
           # convert windows line endings to unix in event text
           echo "$ISSUE_BODY" > .ci-temp/windows.txt
           tr -d '\15\32' < .ci-temp/windows.txt > .ci-temp/text
-
-          curl --fail-with-body -X GET "${PULL_REQUEST_URL}" \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: token $GITHUB_TOKEN" \
-              -o .ci-temp/info.json
-
-          jq --raw-output .head.ref .ci-temp/info.json > .ci-temp/branch
-          jq --raw-output .head.sha .ci-temp/info.json > .ci-temp/commit_sha
 
       - name: Parsing content of PR description
         id: parse_description
