@@ -235,24 +235,26 @@ jobs:
           INPUT_FILE="${{ needs.parse_comment.outputs.input_file }}"
           WORKSPACE="${{ github.workspace }}"
       
-          echo "Looking for file: $INPUT_FILE in workspace: $WORKSPACE"
+          echo "Looking for file: $INPUT_FILE"
+          echo "Workspace: $WORKSPACE"
+          echo "Current directory structure:"
+          tree $WORKSPACE
       
-          FOUND_FILES=$(find "$WORKSPACE/src" -type f -path "*$INPUT_FILE")
+          # Search in the entire workspace, not just src
+          FOUND_FILES=$(find "$WORKSPACE" -type f -path "*$INPUT_FILE")
       
-          # Add log to print all found files
           echo "Found files: $FOUND_FILES"
       
-          if [ "$(echo "$FOUND_FILES" | wc -l)" -gt 1 ]; then
-            echo "Error: Multiple matching files found"
-            exit 1
-          elif [ -z "$FOUND_FILES" ]; then
+          if [ -z "$FOUND_FILES" ]; then
             echo "Error: Could not find input file"
+            echo "Files in src directory:"
+            find "$WORKSPACE/src" -type f
             exit 1
           fi
       
           FOUND_FILE="$FOUND_FILES"
           echo "Resolved input file: $FOUND_FILE"
-          ./.ci/append-to-github-output.sh "input_file" "$FOUND_FILE"
+          echo "input_file=$FOUND_FILE" >> $GITHUB_OUTPUT
 
       - name: Download DiffTool JAR
         uses: robinraju/release-downloader@v1.8
