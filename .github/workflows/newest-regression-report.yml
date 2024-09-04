@@ -301,12 +301,13 @@ jobs:
           DEFAULT_PROJECTS_LINK: ${{ env.DEFAULT_PROJECTS_LINK }}
         run: |
           FOUND_FILE="${{ steps.find_input_file.outputs.input_file }}"
-          BASE_PATH=".ci-temp/checkstyle"
+          BASE_PATH=$(dirname "$FOUND_FILE")
           OUTPUT_DIR="${{ env.GENERATED_CONFIGS_PATH }}"
           mkdir -p "$OUTPUT_DIR"
-          
+  
           echo "Original FOUND_FILE = $FOUND_FILE"
-          
+          echo "BASE_PATH = $BASE_PATH"
+
           # Generate a unique name for the config file
           CONFIG_FILE_NAME=$(basename "${{ needs.parse_comment.outputs.input_file }}" .java)_config.xml
           CONFIG_FILE_PATH="$OUTPUT_DIR/$CONFIG_FILE_NAME"
