@@ -231,7 +231,7 @@ jobs:
           ./.ci/append-to-github-output.sh "projects_link" "$PROJECTS_LINK"
 
   handle_generated_config_bundle:
-    needs: [parse_comment, checkout_and_cache]
+    needs: [ parse_comment, checkout_and_cache ]
     if: needs.parse_comment.outputs.mode == 'generated_config_bundle'
     runs-on: ubuntu-latest
     outputs:
@@ -456,13 +456,6 @@ jobs:
           path: .ci-temp/checkstyle
           key: "${{ env.CACHE_KEY_MASTER }}"
 
-      - name: Log Checkstyle root cache contents
-        run: |
-          echo "Checkstyle root cache contents:"
-          ls -R .ci-temp/checkstyle
-          echo "Content of key configuration files:"
-          cat .ci-temp/checkstyle/config/checkstyle_checks.xml || echo "File not found"
-
       - name: Restore PR Checkout
         uses: actions/cache@v4
         with:
@@ -523,6 +516,17 @@ jobs:
             echo "diff_config.xml not found"
           fi
           echo "-------------------------"
+
+      - name: Print project.properties
+        run: |
+          echo "Contents of project.properties:"
+          echo "-------------------------------"
+          if [ -f .ci-temp/contribution/checkstyle-tester/project.properties ]; then
+            cat .ci-temp/contribution/checkstyle-tester/project.properties
+          else
+            echo "project.properties not found"
+          fi
+          echo "-------------------------------"
 
       - name: Generate report
         env:
