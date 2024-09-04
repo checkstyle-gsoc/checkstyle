@@ -306,12 +306,14 @@ jobs:
           CONFIG_FILE_PATH="$OUTPUT_DIR/generated_config.xml"
           
           # Construct the command
-          CMD="java -jar ../extractor-all-${{env.EXTRACTOR_VERSION}}.jar --input-file \"$INPUT_FILE\" --output-file \"$CONFIG_FILE_PATH\""
+          CMD="java -jar ../extractor-all-${{env.EXTRACTOR_VERSION}}.jar"
+          CMD="$CMD --input-file=$INPUT_FILE"
+          CMD="$CMD --output-file=$CONFIG_FILE_PATH"
           
           echo "Executing command: $CMD"
           
           # Execute the command
-          eval $CMD
+          $CMD
           
           echo "Generated config file at: $CONFIG_FILE_PATH"
           echo "config_link=$CONFIG_FILE_PATH" >> $GITHUB_OUTPUT
@@ -320,8 +322,12 @@ jobs:
           echo "projects_link=${{ env.DEFAULT_PROJECTS_LINK }}" >> $GITHUB_OUTPUT
 
           # Print the contents of the generated config file
-          echo "Contents of generated config file:"
-          cat "$CONFIG_FILE_PATH"
+          if [ -f "$CONFIG_FILE_PATH" ]; then
+            echo "Contents of generated config file:"
+            cat "$CONFIG_FILE_PATH"
+          else
+            echo "Error: Config file was not generated"
+          fi
   
       - name: Cache Generated Config and Project Files
         uses: actions/cache@v4
