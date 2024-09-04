@@ -323,8 +323,8 @@ jobs:
             "$PROJECT_FILE_PATH"
           
           # Set the config and project file paths
-          ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
-          ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
+          echo "config_link=$CONFIG_FILE_PATH" >> $GITHUB_OUTPUT
+          echo "projects_link=$PROJECT_FILE_PATH" >> $GITHUB_OUTPUT
           
           # Print the contents of the files to the logs
           echo "Contents of CONFIG_FILE_PATH:"
