@@ -220,6 +220,9 @@ jobs:
           path: .
           key: "${{ env.CACHE_KEY_PR }}"
 
+      - name: List files in checked out PR
+        run: ls -R ${{ github.workspace }}
+  
       - name: Find input file
         id: find_input_file
         run: |
