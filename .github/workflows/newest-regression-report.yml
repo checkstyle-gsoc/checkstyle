@@ -214,12 +214,18 @@ jobs:
       config_link: ${{ steps.generated_config_bundle.outputs.config_link }}
       projects_link: ${{ steps.generated_config_bundle.outputs.projects_link }}
     steps:
-      - name: Restore PR Checkout
-        uses: actions/cache@v4
-        with:
-          path: .
-          key: "${{ env.CACHE_KEY_PR }}"
+      # - name: Restore PR Checkout
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: .
+      #     key: "${{ env.CACHE_KEY_PR }}"
 
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+    
       - name: List files in checked out PR
         run: ls -R ${{ github.workspace }}
   
