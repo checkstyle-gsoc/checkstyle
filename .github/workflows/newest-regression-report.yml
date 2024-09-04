@@ -254,7 +254,7 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ env.BRANCH }}   # Use the branch stored in the environment variable
+          ref: ${{ needs.parse_comment.outputs.branch }} 
           
       - name: Verify current branch and remote
         run: |
