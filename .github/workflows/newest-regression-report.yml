@@ -238,19 +238,34 @@ jobs:
       config_link: ${{ steps.generated_config_bundle.outputs.config_link }}
       projects_link: ${{ steps.generated_config_bundle.outputs.projects_link }}
     steps:
-      - name: Restore PR Checkout Cache
-        uses: actions/cache@v4
-        with:
-          path: .
-          key: "${{ env.CACHE_KEY_PR }}"
+      # - name: Restore PR Checkout Cache
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: .
+      #     key: "${{ env.CACHE_KEY_PR }}"
   
-      - name: Set PR branch as the working directory
+      # - name: Set PR branch as the working directory
+      #   run: |
+      #     BRANCH="${{ needs.parse_comment.outputs.branch }}"
+      #     echo "Switching to PR branch: $BRANCH"
+      #     cd "forked/$BRANCH"
+      #     echo "Current working directory: $(pwd)"
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Verify current branch and remote
         run: |
-          BRANCH="${{ needs.parse_comment.outputs.branch }}"
-          echo "Switching to PR branch: $BRANCH"
-          cd "forked/$BRANCH"
-          echo "Current working directory: $(pwd)"
-      
+          echo "Current branch:"
+          git branch --show-current
+          echo "Remote URL:"
+          git remote -v
+          echo "Commit SHA:"
+          git rev-parse HEAD
+    
       - name: List files in PR branch
         run: |
           echo "Listing files in the PR branch:"
