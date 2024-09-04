@@ -305,15 +305,22 @@ jobs:
           
           CONFIG_FILE_PATH="$OUTPUT_DIR/generated_config.xml"
           
+          # Read the content of the input file
+          if [ -f "$INPUT_FILE" ]; then
+            INPUT_CONTENT=$(cat "$INPUT_FILE")
+          else
+            echo "Error: Input file not found: $INPUT_FILE"
+            exit 1
+          fi
+          
           # Construct the command
           CMD="java -jar ../extractor-all-${{env.EXTRACTOR_VERSION}}.jar"
-          CMD="$CMD --input-file=$INPUT_FILE"
           CMD="$CMD --output-file=$CONFIG_FILE_PATH"
           
           echo "Executing command: $CMD"
           
-          # Execute the command
-          $CMD
+          # Execute the command, passing the file content via standard input
+          echo "$INPUT_CONTENT" | $CMD
           
           echo "Generated config file at: $CONFIG_FILE_PATH"
           echo "config_link=$CONFIG_FILE_PATH" >> $GITHUB_OUTPUT
