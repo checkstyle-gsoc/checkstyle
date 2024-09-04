@@ -238,11 +238,11 @@ jobs:
       config_link: ${{ steps.generated_config_bundle.outputs.config_link }}
       projects_link: ${{ steps.generated_config_bundle.outputs.projects_link }}
     steps:
-      - name: Checkout master branch
-        uses: actions/checkout@v4
+      - name: Restore PR Checkout
+        uses: actions/cache@v4
         with:
-          repository: checkstyle/checkstyle
-          path: checkstyle
+          path: .
+          key: "${{ env.CACHE_KEY_PR }}"
   
       - name: Find input file
         id: find_input_file
