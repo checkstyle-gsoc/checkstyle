@@ -251,8 +251,7 @@ jobs:
           PR_NUMBER: ${{ github.event.issue.number }}
         run: |
           INPUT_FILE="${{ needs.parse_comment.outputs.input_file }}"
-
-           # Fetch the PR details
+          # Fetch the PR details
           PR_DETAILS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER")
           
@@ -266,15 +265,17 @@ jobs:
           FILE_CONTENT=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://raw.githubusercontent.com/$HEAD_REPO/$HEAD_REF/$INPUT_FILE")
           
-          cat "$FILE_CONTENT"
-
           if [ -z "$FILE_CONTENT" ]; then
             echo "Error: Could not fetch file content"
             exit 1
           fi
-
-          FOUND_FILE="$FILE_CONTENT"
-          ./.ci/append-to-github-output.sh "input_file" "$FOUND_FILE"
+          
+          # Create a temporary file with the content
+          TEMP_FILE=$(mktemp)
+          echo "$FILE_CONTENT" > "$TEMP_FILE"
+          
+          echo "Temporary file created at: $TEMP_FILE"
+          echo "input_file=$TEMP_FILE" >> $GITHUB_OUTPUT
 
       - name: Download Extractor JAR
         uses: robinraju/release-downloader@v1.8
@@ -291,50 +292,37 @@ jobs:
 
       - name: Generate config
         id: generated_config_bundle
+        env:
+          DEFAULT_PROJECTS_LINK: ${{ env.DEFAULT_PROJECTS_LINK }}
         run: |
-          cd checkstyle
-          INPUT_FILE="${{ needs.parse_comment.outputs.input_file }}"
+          FOUND_FILE="${{ steps.find_input_file.outputs.input_file }}"
+          BASE_PATH=".ci-temp/checkstyle"
           OUTPUT_DIR="${{ env.GENERATED_CONFIGS_PATH }}"
           mkdir -p "$OUTPUT_DIR"
-
-          echo "Current working directory: $(pwd)"
-          echo "Contents of current directory:"
-          ls -R
-
-          echo "Generating configuration for file: $INPUT_FILE"
           
-          CONFIG_FILE_PATH="$OUTPUT_DIR/generated_config.xml"
+          echo "Original FOUND_FILE = $FOUND_FILE"
           
-          # Read the content of the input file
-          if [ -f "$INPUT_FILE" ]; then
-            INPUT_CONTENT=$(cat "$INPUT_FILE")
-          else
-            echo "Error: Input file not found: $INPUT_FILE"
-            exit 1
-          fi
+          # Generate a unique name for the config file
+          CONFIG_FILE_NAME=$(basename "${{ needs.parse_comment.outputs.input_file }}" .java)_config.xml
+          CONFIG_FILE_PATH="$OUTPUT_DIR/$CONFIG_FILE_NAME"
           
-          # Construct the command
-          CMD="java -jar ../extractor-all-${{env.EXTRACTOR_VERSION}}.jar"
-          CMD="$CMD --output-file=$CONFIG_FILE_PATH"
+          # Generate a name for the projects file
+          PROJECT_FILE_PATH="$OUTPUT_DIR/projects.properties"
           
-          echo "Executing command: $CMD"
+          # Run the extractor
+          java -jar extractor-all-${{env.EXTRACTOR_VERSION}}.jar \
+            "$BASE_PATH" \
+            --input-file "$FOUND_FILE" \
+            "$CONFIG_FILE_PATH" \
+            "$PROJECT_FILE_PATH"
           
-          # Execute the command, passing the file content via standard input
-          echo "$INPUT_CONTENT" | $CMD
+          # Set the config and project file paths
+          ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
+          ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
           
-          echo "Generated config file at: $CONFIG_FILE_PATH"
-          echo "config_link=$CONFIG_FILE_PATH" >> $GITHUB_OUTPUT
-          
-          # For simplicity, we'll use a default projects file
-          echo "projects_link=${{ env.DEFAULT_PROJECTS_LINK }}" >> $GITHUB_OUTPUT
-
-          # Print the contents of the generated config file
-          if [ -f "$CONFIG_FILE_PATH" ]; then
-            echo "Contents of generated config file:"
-            cat "$CONFIG_FILE_PATH"
-          else
-            echo "Error: Config file was not generated"
-          fi
+          # Print the contents of the files to the logs
+          echo "Contents of CONFIG_FILE_PATH:"
+          cat "$CONFIG_FILE_PATH"
   
       - name: Cache Generated Config and Project Files
         uses: actions/cache@v4
