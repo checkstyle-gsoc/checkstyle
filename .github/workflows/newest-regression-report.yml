@@ -280,7 +280,8 @@ jobs:
           echo "File contents:"
           cat "$TEMP_FILE"
           
-          echo "input_file=$TEMP_FILE" >> $GITHUB_OUTPUT
+          # Use the .ci/append-to-github-output.sh script to append the found file path to the GitHub output
+          ./.ci/append-to-github-output.sh "input_file" "$TEMP_FILE"
 
       - name: Download Extractor JAR
         uses: robinraju/release-downloader@v1.8
