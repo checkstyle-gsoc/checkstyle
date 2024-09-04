@@ -4,6 +4,22 @@ set -e
 
 JAR_PATH="$1"
 
+echo "Checking that all excluded java files in this script have matching InputFormatted* file:"
+NOT_FOUND_CONTENT=$(grep -e '^  .*/Input' "${BASH_SOURCE}" \
+  | sed -E 's/.*Input([^\.]+)\..*java.*/\1/' \
+  | while read -r name; do \
+    [[ $(find ./src -type f -name "InputFormatted${name}.java") ]] \
+    || echo "Create InputFormatted${name}.java for Input${name}.java";\
+  done)
+
+if [[ $(echo -n "$NOT_FOUND_CONTENT" | wc --chars) -eq 0 ]]; then
+  echo "Excluded Input files matches to InputFormatted files."
+else
+  echo "not fount matches: $NOT_FOUND_CONTENT"
+  exit 1
+fi
+
+echo "Formatting all Input files file at src/it/resources/com/google/checkstyle/test :"
 INPUT_PATHS=($(find src/it/resources/com/google/checkstyle/test/ -name "Input*.java" \
     | sed "s|src/it/resources/com/google/checkstyle/test/||" \
     | grep -v "rule711generalform/InputSingleLineJavadocAndInvalidJavadocPosition.java" \
@@ -21,7 +37,6 @@ INPUT_PATHS=($(find src/it/resources/com/google/checkstyle/test/ -name "Input*.j
     | grep -v "rule412nonemptyblocks/InputRightCurlySwitchCase.java" \
     | grep -v "rule412nonemptyblocks/InputRightCurlySwitchCasesBlocks.java" \
     | grep -v "rule413emptyblocks/InputEmptyBlocksAndCatchBlocks.java" \
-    | grep -v "rule413emptyblocks/InputEmptyFinallyBlocks.java" \
     | grep -v "rule42blockindentation/ClassWithChainedMethods.java" \
     | grep -v "rule43onestatement/InputOneStatementPerLine.java" \
     | grep -v "rule44columnlimit/InputColumnLimit.java" \
@@ -47,13 +62,14 @@ INPUT_PATHS=($(find src/it/resources/com/google/checkstyle/test/ -name "Input*.j
     | grep -v "rule462horizontalwhitespace/InputGenericWhitespace.java" \
     | grep -v "rule487modifiers/InputModifierOrder.java" \
     | grep -v "rule4821onevariableperline/InputOneVariablePerDeclaration.java" \
-    | grep -v "rule4841indentation/ClassWithChainedMethods.java" \
-    | grep -v "rule485annotations/InputAnnotationLocation.java" \
-    | grep -v "rule485annotations/InputAnnotationLocationVariables.java" \
+    | grep -v "rule4841indentation/InputClassWithChainedMethods.java" \
     | grep -v "rule4852classannotations/InputClassAnnotations.java" \
-    | grep -v "rule4853methods.*/InputMethodsAndConstructorsAnnotations.java" \
+    | grep -v "rule4853methodsandconstructorsannotations/InputMethodsAndConstructorsAnnotations.java" \
     | grep -v "rule4854fieldannotations/InputFieldAnnotations.java" \
-    | grep -v "rule4861blockcommentstyle/InputCommentsIndentation.*.java" \
+    | grep -v "rule4861blockcommentstyle/InputCommentsIndentationCommentIsAtTheEndOfBlock.java" \
+    | grep -v "rule4861blockcommentstyle/InputCommentsIndentationInEmptyBlock.java" \
+    | grep -v "rule4861blockcommentstyle/InputCommentsIndentationInSwitchBlock.java" \
+    | grep -v "rule4861blockcommentstyle/InputCommentsIndentationSurroundingCode.java" \
     | grep -v "rule3sourcefile/InputSourceFileStructure.java" \
     | grep -v "rule332nolinewrap/InputNoLineWrapping.java" \
     | grep -v "rule333orderingandspacing/InputOrderingAndSpacing1.java" \

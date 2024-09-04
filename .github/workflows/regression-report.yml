@@ -22,8 +22,8 @@ env:
   CACHE_KEY_PR: "simple-cache-key-PR-${{ github.sha }}"
   CACHE_KEY_MASTER: "simple-cache-key-MASTER-${{ github.sha }}"
   CACHE_KEY_CONTRIBUTION: "simple-cache-key-CONTRIBUTION-${{ github.sha }}"
-  CACHE_KEY_CONFIG_FILES: "config-files-${{ github.sha }}"
-  CACHE_KEY_GENERATED_CONFIGS: "generated-configs-${{ github.sha }}"
+  CACHE_KEY_CONFIG_FILES: "config-files-${{ github.sha }}-${{ github.event.comment.id }}"
+  CACHE_KEY_GENERATED_CONFIGS: "generated-configs-${{ github.sha }}-${{ github.event.comment.id }}"
   GENERATED_CONFIGS_PATH: generated_configs
 
 on:
@@ -33,6 +33,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  actions: write
 
 concurrency:
   group: ${{ github.run_id }}
@@ -496,6 +497,28 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Print config.xml
+        run: |
+          echo "Contents of config.xml:"
+          echo "-------------------------"
+          if [ -f .ci-temp/contribution/checkstyle-tester/diff_config.xml ]; then
+            cat .ci-temp/contribution/checkstyle-tester/diff_config.xml
+          else
+            echo "diff_config.xml not found"
+          fi
+          echo "-------------------------"
+
+      - name: Print project.properties
+        run: |
+          echo "Contents of project.properties:"
+          echo "-------------------------------"
+          if [ -f .ci-temp/contribution/checkstyle-tester/project.properties ]; then
+            cat .ci-temp/contribution/checkstyle-tester/project.properties
+          else
+            echo "project.properties not found"
+          fi
+          echo "-------------------------------"
+
       - name: Generate report
         env:
           BRANCH: ${{ needs.download_configs.outputs.branch }}
@@ -635,3 +658,25 @@ jobs:
         with:
           message: ${{steps.out.outputs.message}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clean up cache
+        if: always()
+        run: |
+          echo "Cleaning up cache..."
+          # List of cache keys to remove
+          CACHE_KEYS=(
+            "${{ env.CACHE_KEY_PR }}"
+            "${{ env.CACHE_KEY_MASTER }}"
+            "${{ env.CACHE_KEY_CONTRIBUTION }}"
+            "${{ env.CACHE_KEY_CONFIG_FILES }}"
+            "${{ env.CACHE_KEY_GENERATED_CONFIGS }}"
+          )
+
+          for key in "${CACHE_KEYS[@]}"; do
+            echo "Removing cache with key: $key"
+            curl --fail-with-body -X DELETE \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/caches?key=$key"
+          done
+          echo "Cache cleanup completed."

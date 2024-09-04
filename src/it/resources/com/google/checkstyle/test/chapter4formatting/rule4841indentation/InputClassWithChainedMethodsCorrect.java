@@ -1,9 +1,9 @@
 package com.google.checkstyle.test.chapter4formatting.rule4841indentation;
 
 /** some javadoc. */
-public class ClassWithChainedMethodsCorrect {
+public class InputClassWithChainedMethodsCorrect {
   /** some javadoc. */
-  public ClassWithChainedMethodsCorrect() {
+  public InputClassWithChainedMethodsCorrect() {
 
     String someString = "";
 
@@ -12,11 +12,13 @@ public class ClassWithChainedMethodsCorrect {
     doNothing(someString.concat("zyx").concat("255, 254, 253"));
   }
 
+  /** some javadoc. */
   public static void main(String[] args) {
-    ClassWithChainedMethodsCorrect classWithChainedMethodsCorrect =
-        new ClassWithChainedMethodsCorrect();
+    InputClassWithChainedMethodsCorrect classWithChainedMethodsCorrect =
+        new InputClassWithChainedMethodsCorrect();
   }
 
+  /** some javadoc. */
   public String doNothing(String something) {
     return something;
   }
