@@ -19,7 +19,7 @@ env:
   # yamllint disable-line rule:line-length
   DEFAULT_PROJECTS_LINK: "https://raw.githubusercontent.com/checkstyle/test-configs/main/extractor/src/main/resources/list-of-projects.properties"
   EXTRACTOR_VERSION: 2024-08-27
-  CACHE_KEY_PR: "simple-cache-key-PR-${{ github.sha }}--${{ github.event.comment.id }}"
+  CACHE_KEY_PR: "simple-cache-key-PR-${{ github.sha }}-${{ github.event.comment.id }}"
   CACHE_KEY_MASTER: "simple-cache-key-MASTER-${{ github.sha }}"
   CACHE_KEY_CONTRIBUTION: "simple-cache-key-CONTRIBUTION-${{ github.sha }}"
   CACHE_KEY_CONFIG_FILES: "config-files-${{ github.sha }}-${{ github.event.comment.id }}"
