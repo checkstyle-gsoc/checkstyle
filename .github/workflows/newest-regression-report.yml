@@ -251,10 +251,12 @@ jobs:
       #     cd "forked/$BRANCH"
       #     echo "Current working directory: $(pwd)"
 
-      - name: Checkout PR branch
+      - name: Checkout defectInput2 branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          repository: relentless-pursuit/checkstyle
+          ref: defectInput2
+          fetch-depth: 0
 
           
       - name: Verify current branch and remote
