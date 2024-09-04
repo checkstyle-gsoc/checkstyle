@@ -263,14 +263,10 @@ jobs:
           pwd
           echo "Contents of current directory:"
           ls -la
-          echo "Contents of .ci-temp directory (if it exists):"
-          ls -la .ci-temp || echo ".ci-temp does not exist"
-          echo "Git status:"
-          git status
-          echo "Current branch:"
-          git branch --show-current
-          echo "All branches:"
-          git branch -a
+          echo "Contents of .ci-temp directory:"
+          ls -la .ci-temp
+          echo "Contents of .ci-temp/checkstyle directory:"
+          ls -la .ci-temp/checkstyle
   
       - name: Set up Git and checkout PR branch
         env:
@@ -283,13 +279,19 @@ jobs:
           git config --global user.email "action@github.com"
           MAIN_REPO_GIT_URL="https://github.com/checkstyle/checkstyle.git"
           FORK_REPO_GIT_URL="https://github.com/$USER_LOGIN/checkstyle.git"
-          git remote add upstream "$MAIN_REPO_GIT_URL"
-          git remote add forked "$FORK_REPO_GIT_URL"
+          git remote add upstream "$MAIN_REPO_GIT_URL" || true
+          git remote add forked "$FORK_REPO_GIT_URL" || true
           git fetch upstream
           git fetch forked
-          git checkout -b "$BRANCH" "forked/$BRANCH"
+          git checkout -b "$BRANCH" "forked/$BRANCH" || git checkout "$BRANCH"
           echo "Current directory after checkout:"
           pwd
+          echo "Git status:"
+          git status
+          echo "Current branch:"
+          git branch --show-current
+          echo "All branches:"
+          git branch -a
           echo "Contents after checkout:"
           ls -R
       
