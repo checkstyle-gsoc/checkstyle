@@ -251,20 +251,43 @@ jobs:
       #     cd "forked/$BRANCH"
       #     echo "Current working directory: $(pwd)"
 
-      - name: Checkout PR branch
-        uses: actions/checkout@v4
+      - name: Restore Master Checkstyle Checkout
+        uses: actions/cache@v4
         with:
-          ref: ${{ needs.parse_comment.outputs.branch }} 
-          
+          path: .ci-temp/checkstyle
+          key: "${{ env.CACHE_KEY_MASTER }}"
+  
+      - name: Set up Git
+        run: |
+          cd .ci-temp/checkstyle
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+  
+      - name: Set up remotes and fetch PR branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USER_LOGIN: ${{ github.event.issue.user.login }}
+          BRANCH: ${{ needs.parse_comment.outputs.branch }}
+        run: |
+          cd .ci-temp/checkstyle
+          MAIN_REPO_GIT_URL="https://github.com/checkstyle/checkstyle.git"
+          FORK_REPO_GIT_URL="https://github.com/$USER_LOGIN/checkstyle.git"
+          git remote add upstream "$MAIN_REPO_GIT_URL"
+          git remote add forked "$FORK_REPO_GIT_URL"
+          git fetch upstream
+          git fetch forked
+          git checkout -b "$BRANCH" "forked/$BRANCH"
+  
       - name: Verify current branch and remote
         run: |
+          cd .ci-temp/checkstyle
           echo "Current branch:"
           git branch --show-current
           echo "Remote URL:"
           git remote -v
           echo "Commit SHA:"
           git rev-parse HEAD
-    
+        
       - name: List files in PR branch
         run: |
           echo "Listing files in the PR branch:"
