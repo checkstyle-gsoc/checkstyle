@@ -255,9 +255,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ env.BRANCH }}   # Use the branch stored in the environment variable
           fetch-depth: 0
-
           
       - name: Verify current branch and remote
         run: |
