@@ -150,13 +150,13 @@ jobs:
         with:
           path: .ci-temp/checkstyle
           key: "${{ env.CACHE_KEY_MASTER }}"
-  
+
       - name: Restore PR Checkout
         uses: actions/cache@v4
         with:
           path: .
           key: "${{ env.CACHE_KEY_PR }}"
-  
+
       - name: Parse comment
         id: parse
         env:
@@ -165,20 +165,25 @@ jobs:
           PATTERN_FOR_DESCRIPTION='^Git[Hh]ub, generate report for configs in PR description$'
           PATTERN_FOR='^Git[Hh]ub, generate report for'
           PATTERN_BY_CONFIG_FROM='^Git[Hh]ub, generate report by config from'
-  
+
           if [[ "$COMMENT_BODY" =~ $PATTERN_FOR_DESCRIPTION ]]; then
             ./.ci/append-to-github-output.sh "mode" "configs_in_pr_description"
+
           elif [[ "$COMMENT_BODY" =~ $PATTERN_FOR ]]; then
             ./.ci/append-to-github-output.sh "mode" "existing_config_bundle"
             CONFIG_BUNDLE=$(echo "$COMMENT_BODY" | sed -E "s/$PATTERN_FOR //g")
             ./.ci/append-to-github-output.sh "config_bundle" "$CONFIG_BUNDLE"
+
           elif [[ "$COMMENT_BODY" =~ $PATTERN_BY_CONFIG_FROM ]]; then
             ./.ci/append-to-github-output.sh "mode" "generated_config_bundle"
             INPUT_FILE=$(echo "$COMMENT_BODY" | sed -E "s/$PATTERN_BY_CONFIG_FROM //g")
             ./.ci/append-to-github-output.sh "input_file" "$INPUT_FILE"
+
           else
             echo "No recognized pattern found in '$COMMENT_BODY'."
             exit 1
+          fi
+          
   
       - name: Set branch
         id: set_branch
