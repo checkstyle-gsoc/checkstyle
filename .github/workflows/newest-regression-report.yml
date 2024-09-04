@@ -268,9 +268,13 @@ jobs:
             echo "Error: Could not fetch file content"
             exit 1
           fi
-
-          FOUND_FILE="$FOUND_FILES"
-          ./.ci/append-to-github-output.sh "input_file" "$FOUND_FILE"
+          
+          # Create the file locally
+          mkdir -p $(dirname "checkstyle/$INPUT_FILE")
+          echo "$FILE_CONTENT" > "checkstyle/$INPUT_FILE"
+          
+          echo "File created at checkstyle/$INPUT_FILE"
+          cat "checkstyle/$INPUT_FILE"
 
       - name: Download Extractor JAR
         uses: robinraju/release-downloader@v1.8
