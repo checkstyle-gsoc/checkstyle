@@ -251,75 +251,64 @@ jobs:
       #     cd "forked/$BRANCH"
       #     echo "Current working directory: $(pwd)"
 
-      - name: Get PR details
+      - name: Checkout master branch
+        uses: actions/checkout@v4
+        with:
+          repository: checkstyle/checkstyle
+          path: checkstyle
+  
+      - name: Fetch file content from PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.issue.number }}
+          INPUT_FILE: ${{ needs.parse_comment.outputs.input_file }}
         run: |
+          # Fetch the PR details
           PR_DETAILS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER")
-          echo "HEAD_REPO=$(echo $PR_DETAILS | jq -r .head.repo.full_name)" >> $GITHUB_ENV
-          echo "HEAD_REF=$(echo $PR_DETAILS | jq -r .head.ref)" >> $GITHUB_ENV
+          
+          # Extract the head repo and ref
+          HEAD_REPO=$(echo $PR_DETAILS | jq -r .head.repo.full_name)
+          HEAD_REF=$(echo $PR_DETAILS | jq -r .head.ref)
+          
           echo "PR is from $HEAD_REPO branch $HEAD_REF"
-  
-      - name: Checkout PR branch
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ env.HEAD_REPO }}
-          ref: ${{ env.HEAD_REF }}
-          path: checkstyle-pr
-      
-      - name: Find input file in PR branch
-        id: find_input_file
-        run: |
-          INPUT_FILE="${{ needs.parse_comment.outputs.input_file }}"
-          WORKSPACE="${{ github.workspace }}"
-  
-          echo "Looking for file: $INPUT_FILE in workspace: $WORKSPACE"
-  
-          FOUND_FILES=$(find "$WORKSPACE/src" -type f -path "*$INPUT_FILE")
-  
-          if [ "$(echo "$FOUND_FILES" | wc -l)" -gt 1 ]; then
-            echo "Error: Multiple matching files found"
-            exit 1
-          elif [ -z "$FOUND_FILES" ]; then
-            echo "Error: Could not find input file"
+          
+          # Fetch the file content
+          FILE_CONTENT=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://raw.githubusercontent.com/$HEAD_REPO/$HEAD_REF/$INPUT_FILE")
+          
+          if [ -z "$FILE_CONTENT" ]; then
+            echo "Error: Could not fetch file content"
             exit 1
           fi
-  
-          FOUND_FILE="$FOUND_FILES"
-          echo "Resolved input file: $FOUND_FILE"
-          ./.ci/append-to-github-output.sh "input_file" "$FOUND_FILE"
-  
-      - name: Download Extractor JAR
-        uses: robinraju/release-downloader@v1.8
-        with:
-          repository: "checkstyle/test-configs"
-          tag: "extractor-${{env.EXTRACTOR_VERSION}}"
-          fileName: "extractor-all-${{env.EXTRACTOR_VERSION}}.jar"
-  
-      - name: Set up Java 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
+          
+          # Create the file locally
+          mkdir -p $(dirname "checkstyle/$INPUT_FILE")
+          echo "$FILE_CONTENT" > "checkstyle/$INPUT_FILE"
+          
+          echo "File created at checkstyle/$INPUT_FILE"
+          cat "checkstyle/$INPUT_FILE"
   
       - name: Generate config
         id: generated_config_bundle
         run: |
-          FOUND_FILE="${{ steps.find_input_file.outputs.input_file }}"
+          cd checkstyle
+          INPUT_FILE="${{ needs.parse_comment.outputs.input_file }}"
           OUTPUT_DIR="${{ env.GENERATED_CONFIGS_PATH }}"
           mkdir -p "$OUTPUT_DIR"
   
-          echo "Generating configuration for file: $FOUND_FILE"
+          echo "Generating configuration for file: $INPUT_FILE"
           
           CONFIG_FILE_PATH="$OUTPUT_DIR/generated_config.xml"
-          java -jar "extractor-all-${{env.EXTRACTOR_VERSION}}.jar" \
-            --input-file "$FOUND_FILE" \
+          java -jar "../extractor-all-${{env.EXTRACTOR_VERSION}}.jar" \
+            --input-file "$INPUT_FILE" \
             --output-file "$CONFIG_FILE_PATH"
           
           echo "Generated config file at: $CONFIG_FILE_PATH"
-          ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
+          echo "config_link=$CONFIG_FILE_PATH" >> $GITHUB_OUTPUT
+          
+          # For simplicity, we'll use a default projects file
+          echo "projects_link=${{ env.DEFAULT_PROJECTS_LINK }}" >> $GITHUB_OUTPUT
   
       - name: Cache Generated Config and Project Files
         uses: actions/cache@v4
