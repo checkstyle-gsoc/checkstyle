@@ -19,7 +19,7 @@ env:
   # yamllint disable-line rule:line-length
   DEFAULT_PROJECTS_LINK: "https://raw.githubusercontent.com/checkstyle/test-configs/main/extractor/src/main/resources/list-of-projects.properties"
   EXTRACTOR_VERSION: 2024-08-27
-  CACHE_KEY_PR: "simple-cache-key-PR-${{ github.sha }}-${{ github.event.comment.id }}"
+  CACHE_KEY_PR: "simple-cache-key-PR-${{ github.sha }}"
   CACHE_KEY_MASTER: "simple-cache-key-MASTER-${{ github.sha }}"
   CACHE_KEY_CONTRIBUTION: "simple-cache-key-CONTRIBUTION-${{ github.sha }}"
   CACHE_KEY_CONFIG_FILES: "config-files-${{ github.sha }}-${{ github.event.comment.id }}"
@@ -92,7 +92,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           path: .
-          
+
       - name: Cache PR Checkout
         uses: actions/cache@v4
         with:
@@ -130,8 +130,6 @@ jobs:
       mode: ${{ steps.parse.outputs.mode }}
       config_bundle: ${{ steps.parse.outputs.config_bundle }}
       input_file: ${{ steps.parse.outputs.input_file }}
-      branch: ${{ steps.set_branch.outputs.ref }}
-      commit_sha: ${{ steps.set_branch.outputs.commit_sha }}
     steps:
       - name: React to comment
         uses: actions/github-script@v7
@@ -144,7 +142,7 @@ jobs:
               comment_id: context.payload.comment.id,
               content: 'rocket'
             })
-  
+
       - name: Restore Master Checkstyle Checkout
         uses: actions/cache@v4
         with:
@@ -183,28 +181,6 @@ jobs:
             echo "No recognized pattern found in '$COMMENT_BODY'."
             exit 1
           fi
-          
-  
-      - name: Set branch
-        id: set_branch
-        env:
-          PULL_REQUEST_URL: ${{ github.event.issue.pull_request.url }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p .ci-temp
-          curl --fail-with-body -X GET "${PULL_REQUEST_URL}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -o .ci-temp/info.json
-  
-          jq --raw-output .head.ref .ci-temp/info.json > .ci-temp/branch
-          jq --raw-output .head.sha .ci-temp/info.json > .ci-temp/commit_sha
-  
-          ./.ci/append-to-github-output.sh "ref" "$(cat .ci-temp/branch)"
-          ./.ci/append-to-github-output.sh "commit_sha" "$(cat .ci-temp/commit_sha | cut -c 1-7)"
-  
-          echo "Branch: $(cat .ci-temp/branch)"
-          echo "Commit SHA: $(cat .ci-temp/commit_sha)"
 
   handle_existing_config_bundle:
     needs: [ parse_comment, checkout_and_cache ]
@@ -243,7 +219,7 @@ jobs:
         with:
           path: .
           key: "${{ env.CACHE_KEY_PR }}"
-  
+
       - name: Find input file
         id: find_input_file
         env:
@@ -276,7 +252,6 @@ jobs:
           mkdir -p $(dirname "$TEMP_FILE")
           echo "$FILE_CONTENT" > "$TEMP_FILE"
           
-          echo "File created at: $TEMP_FILE"
           echo "File contents:"
           cat "$TEMP_FILE"
           
@@ -296,42 +271,42 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Generate config
-        id: generated_config_bundle
-        env:
-          DEFAULT_PROJECTS_LINK: ${{ env.DEFAULT_PROJECTS_LINK }}
-        run: |
-          FOUND_FILE="${{ steps.find_input_file.outputs.input_file }}"
-          BASE_PATH=$(dirname "$FOUND_FILE")
-          OUTPUT_DIR="${{ env.GENERATED_CONFIGS_PATH }}"
-          mkdir -p "$OUTPUT_DIR"
-      
-          # Generate a unique name for the config file
-          CONFIG_FILE_NAME=$(basename "$FOUND_FILE" .java)_config.xml
-          CONFIG_FILE_PATH="$OUTPUT_DIR/$CONFIG_FILE_NAME"
-          PROJECT_FILE_PATH="$OUTPUT_DIR/projects.properties"
-      
-          # Run the extractor
-          java -jar extractor-all-${{env.EXTRACTOR_VERSION}}.jar \
-            "$BASE_PATH" \
-            --input-file "$FOUND_FILE" \
-            "$CONFIG_FILE_PATH" \
-            "$PROJECT_FILE_PATH"
+       - name: Generate config
+         id: generated_config_bundle
+         env:
+           DEFAULT_PROJECTS_LINK: ${{ env.DEFAULT_PROJECTS_LINK }}
+         run: |
+           FOUND_FILE="${{ steps.find_input_file.outputs.input_file }}"
+           BASE_PATH=$(dirname "$FOUND_FILE")
+           OUTPUT_DIR="${{ env.GENERATED_CONFIGS_PATH }}"
+           mkdir -p "$OUTPUT_DIR"
+       
+           # Generate a unique name for the config file
+           CONFIG_FILE_NAME=$(basename "$FOUND_FILE" .java)_config.xml
+           CONFIG_FILE_PATH="$OUTPUT_DIR/$CONFIG_FILE_NAME"
+           PROJECT_FILE_PATH="$OUTPUT_DIR/projects.properties"
+       
+           # Run the extractor
+           java -jar extractor-all-${{env.EXTRACTOR_VERSION}}.jar \
+             "$BASE_PATH" \
+             --input-file "$FOUND_FILE" \
+             "$CONFIG_FILE_PATH" \
+             "$PROJECT_FILE_PATH"
+ 
+           # Set the config and project file paths using the script
+           ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
+           ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
+ 
+           # Print the contents of the files to the logs
+           # echo "Contents of diff_config.xml:"
+           # cat "$OUTPUT_DIR/$CONFIG_FILE_PATH"
 
-          # Set the config and project file paths using the script
-          ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
-          ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
-
-          # Print the contents of the files to the logs
-          # echo "Contents of diff_config.xml:"
-          # cat "$OUTPUT_DIR/diff_config.xml"
-  
       - name: Cache Generated Config and Project Files
         uses: actions/cache@v4
         with:
           path: ${{ env.GENERATED_CONFIGS_PATH }}
           key: ${{ env.CACHE_KEY_GENERATED_CONFIGS }}
-        
+
   handle_configs_in_pr_description:
     needs: [ parse_comment, checkout_and_cache ]
     if: needs.parse_comment.outputs.mode == 'configs_in_pr_description'
@@ -512,23 +487,9 @@ jobs:
 
       - name: Prepare environment
         run: |
-          mkdir -p .ci-temp/contribution/checkstyle-tester
-          
-          if [ -f ".ci-temp/project.properties" ]; then
-            mv .ci-temp/project.properties ./.ci-temp/contribution/checkstyle-tester/
-          else
-            echo "project.properties not found, using default"
-            curl -o ./.ci-temp/contribution/checkstyle-tester/project.properties "${{ env.DEFAULT_PROJECTS_LINK }}"
-          fi
-          
-          if [ -f ".ci-temp/diff_config.xml" ]; then
-            mv .ci-temp/diff_config.xml ./.ci-temp/contribution/checkstyle-tester/
-          else
-            echo "diff_config.xml not found, this may cause issues in the next steps"
-          fi
-          
-          sudo apt-get update
-          sudo apt-get install -y groovy
+          mv .ci-temp/project.properties ./.ci-temp/contribution/checkstyle-tester/
+          mv .ci-temp/*.xml ./.ci-temp/contribution/checkstyle-tester/
+          sudo apt install groovy
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -711,10 +672,10 @@ jobs:
             "${{ env.CACHE_KEY_CONFIG_FILES }}"
             "${{ env.CACHE_KEY_GENERATED_CONFIGS }}"
           )
-          
+
           for key in "${CACHE_KEYS[@]}"; do
             echo "Removing cache with key: $key"
-            curl -X DELETE \
+            curl --fail-with-body -X DELETE \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               -H "Accept: application/vnd.github.v3+json" \
               "https://api.github.com/repos/${{ github.repository }}/actions/caches?key=$key"
