@@ -222,19 +222,29 @@ jobs:
 
       - name: Set branch
         env:
-          PULL_REQUEST_URL: ${{ github.event.pull_request.url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
         id: set_branch
         run: |
-          mkdir -p .ci-temp
-          curl --fail-with-body -X GET "${PULL_REQUEST_URL}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -o .ci-temp/info.json
-          jq --raw-output .head.ref .ci-temp/info.json > .ci-temp/branch
-          jq --raw-output .head.sha .ci-temp/info.json > .ci-temp/commit_sha
-          echo "ref=$(cat .ci-temp/branch)" >> $GITHUB_OUTPUT
-          echo "commit_sha=$(cat .ci-temp/commit_sha | cut -c 1-7)" >> $GITHUB_OUTPUT
+          if [[ -n "${{ github.event.pull_request.url }}" ]]; then
+            echo "Pull request URL found, fetching details..."
+            mkdir -p .ci-temp
+            curl --fail-with-body -X GET "${{ github.event.pull_request.url }}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -o .ci-temp/info.json
+            REF=$(jq --raw-output .head.ref .ci-temp/info.json)
+            COMMIT_SHA=$(jq --raw-output .head.sha .ci-temp/info.json)
+          else
+            echo "No pull request URL found, using fallback values..."
+            REF="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+            COMMIT_SHA="${GITHUB_SHA}"
+          fi
+          
+          echo "ref=$REF" >> $GITHUB_OUTPUT
+          echo "commit_sha=${COMMIT_SHA:0:7}" >> $GITHUB_OUTPUT
           echo "GITHUB_OUTPUT:"
           cat "$GITHUB_OUTPUT"
 
