@@ -215,29 +215,32 @@ jobs:
       config_link: ${{ steps.generated_config_bundle.outputs.config_link }}
       projects_link: ${{ steps.generated_config_bundle.outputs.projects_link }}
     steps:
-      - name: Restore PR Checkout
-        uses: actions/cache@v4
+      - name: Checkout Pull Request Code
+        uses: actions/checkout@v4
         with:
-          path: .
-          key: "${{ env.CACHE_KEY_PR }}"
-
+          fetch-depth: 0
+          
       - name: Find input file
         id: find_input_file
         run: |
           INPUT_FILE="${{ needs.parse_comment.outputs.input_file }}"
           WORKSPACE="${{ github.workspace }}"
-
-          FOUND_FILES=$(find "$WORKSPACE/src" -type f -path "*$INPUT_FILE")
-
-          if [ "$(echo "$FOUND_FILE" | wc -l)" -gt 1 ]; then
+          
+          # Get the list of files changed in this PR
+          PR_FILES=$(git diff --name-only origin/${{ github.base_ref }}..HEAD)
+          
+          # Search for the input file in the list of changed files
+          FOUND_FILES=$(echo "$PR_FILES" | grep -F "$INPUT_FILE")
+          
+          if [ "$(echo "$FOUND_FILES" | wc -l)" -gt 1 ]; then
             echo "Error: Multiple matching files found"
             exit 1
           elif [ -z "$FOUND_FILES" ]; then
-            echo "Error: Could not find input file"
+            echo "Error: Could not find input file in the PR"
             exit 1
           fi
-
-          FOUND_FILE="$FOUND_FILES"
+          
+          FOUND_FILE="$WORKSPACE/$FOUND_FILES"
           ./.ci/append-to-github-output.sh "input_file" "$FOUND_FILE"
 
       - name: Download DiffTool JAR
