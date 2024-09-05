@@ -261,107 +261,28 @@ jobs:
       config_link: ${{ steps.generated_config_bundle.outputs.config_link }}
       projects_link: ${{ steps.generated_config_bundle.outputs.projects_link }}
     steps:
-      - name: Checkout PR
-        uses: actions/checkout@v3
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Debug Checkout
-        run: |
-          echo "Current directory contents:"
-          ls -la
-          echo "Current git status:"
-          git status
-          echo "Current branch:"
-          git branch --show-current
-          echo "All branches:"
-          git branch -a
-          echo "Git log (last 5 commits):"
-          git log --oneline -n 5
-
-      - name: Fetch base branch
-        run: |
-          echo "Fetching base branch: ${{ github.base_ref }}"
-          git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
-          echo "After fetch, all branches:"
-          git branch -a
-
-      - name: Get PR details
-        id: pr_details
-        run: |
-          echo "GitHub event name: ${{ github.event_name }}"
-          echo "GitHub ref: ${{ github.ref }}"
-          echo "GitHub head ref: ${{ github.head_ref }}"
-          echo "GitHub base ref: ${{ github.base_ref }}"
-          echo "Pull request number: ${{ github.event.pull_request.number }}"
-          echo "Pull request title: ${{ github.event.pull_request.title }}"
-          echo "head_sha=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
-          echo "base_sha=${{ github.event.pull_request.base.sha }}" >> $GITHUB_OUTPUT
-          echo "head_ref=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
-          echo "Output head_sha: ${{ github.event.pull_request.head.sha }}"
-          echo "Output base_sha: ${{ github.event.pull_request.base.sha }}"
-          echo "Output head_ref: ${{ github.event.pull_request.head.ref }}"
-
-      - name: Debug PR details
-        run: |
-          echo "PR Head SHA: ${{ steps.pr_details.outputs.head_sha }}"
-          echo "PR Base SHA: ${{ steps.pr_details.outputs.base_sha }}"
-          echo "PR Head Ref: ${{ steps.pr_details.outputs.head_ref }}"
-          echo "Git diff between base and head:"
-          git diff --name-status ${{ steps.pr_details.outputs.base_sha }} ${{ steps.pr_details.outputs.head_sha }}
-
-
-      - name: Get new files
-        id: new_files
-        run: |
-          BASE_SHA=$(git merge-base ${{ github.event.pull_request.base.sha }} HEAD)
-          NEW_FILES=$(git diff --name-only --diff-filter=A $BASE_SHA HEAD)
-          echo "New files added in this PR:"
-          echo "$NEW_FILES"
-          echo "new_files_list<<EOF" >> $GITHUB_OUTPUT
-          echo "$NEW_FILES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Process new files
-        run: |
-          NEW_FILES="${{ steps.new_files.outputs.new_files_list }}"
-          if [ -z "$NEW_FILES" ]; then
-            echo "No new files found in this PR."
-          else
-            echo "New files found:"
-            echo "$NEW_FILES"
-            # Add your processing logic here
-          fi
+          ref: ${{ github.event.pull_request.head.ref }}
           
       - name: Find input file
         id: find_input_file
         run: |
           INPUT_FILE="${{ needs.parse_comment.outputs.input_file }}"
           WORKSPACE="${{ github.workspace }}"
-          
-          # Get the list of all files in the repo
-          ALL_FILES=$(git ls-files)
-          
-          # Search for the input file in the list of all files
-          FOUND_FILES=$(echo "$ALL_FILES" | grep -F "$INPUT_FILE")
-          
-          if [ "$(echo "$FOUND_FILES" | wc -l)" -gt 1 ]; then
+
+          FOUND_FILES=$(find "$WORKSPACE/src" -type f -path "*$INPUT_FILE")
+
+          if [ "$(echo "$FOUND_FILE" | wc -l)" -gt 1 ]; then
             echo "Error: Multiple matching files found"
             exit 1
           elif [ -z "$FOUND_FILES" ]; then
-            echo "Error: Could not find input file in the repository"
+            echo "Error: Could not find input file"
             exit 1
           fi
-          
-          FOUND_FILE="$WORKSPACE/$FOUND_FILES"
-          
-          # Check if the file exists
-          if [ ! -f "$FOUND_FILE" ]; then
-            echo "Error: File $FOUND_FILE does not exist"
-            exit 1
-          fi
-          
+
+          FOUND_FILE="$FOUND_FILES"
           ./.ci/append-to-github-output.sh "input_file" "$FOUND_FILE"
 
       - name: Download DiffTool JAR
@@ -401,11 +322,6 @@ jobs:
           # Generate a name for the projects file
           PROJECT_FILE_PATH="$OUTPUT_DIR/projects.properties"
 
-          echo "Debugging Outputs:"
-          echo "FOUND_FILE: $FOUND_FILE"
-          echo "BASE_PATH: $BASE_PATH"
-          echo "OUTPUT_DIR: $OUTPUT_DIR"
-          
           # Run the extractor
             java -jar extractor-all-${{env.EXTRACTOR_VERSION}}.jar \
             "$BASE_PATH" \
@@ -413,18 +329,10 @@ jobs:
             "$CONFIG_FILE_PATH" \
             "$PROJECT_FILE_PATH"
 
-          echo "CONFIG_FILE_NAME: $CONFIG_FILE_NAME"
-          echo "CONFIG_FILE_PATH: $CONFIG_FILE_PATH"
-          echo "PROJECT_FILE_PATH: $PROJECT_FILE_PATH"
-
           # Set the config and project file paths
           ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
           ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
 
-          echo "After running extractor:"
-          echo "Config file created at: $CONFIG_FILE_PATH"
-          echo "Projects file created at: $PROJECT_FILE_PATH"
-    
           # Print the contents of the files to the logs
           echo "Contents of CONFIG_FILE_PATH:"
           cat "$CONFIG_FILE_PATH"
@@ -434,7 +342,7 @@ jobs:
         with:
           path: ${{ env.GENERATED_CONFIGS_PATH }}
           key: ${{ env.CACHE_KEY_GENERATED_CONFIGS }}
-
+          
   handle_configs_in_pr_description:
     needs: [ parse_comment, checkout_and_cache ]
     if: needs.parse_comment.outputs.mode == 'configs_in_pr_description'
