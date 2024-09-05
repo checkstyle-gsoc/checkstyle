@@ -15,14 +15,15 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout repository
+      - name: Checkout PR branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }} # Checkout the PR branch
 
-      - name: Log comment and PR information
+      - name: Display current branch
         run: |
-          echo "Comment body: ${{ github.event.comment.body }}"
-          echo "PR Number: ${{ github.event.issue.number }}"
-
+          echo "You are now on branch: $(git rev-parse --abbrev-ref HEAD)"
+          
       - name: Fetch PR details
         id: pr_details
         uses: actions/github-script@v6
