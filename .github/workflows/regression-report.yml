@@ -220,14 +220,32 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set branch
+        env:
+          PULL_REQUEST_URL: ${{ github.event.pull_request.url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: set_branch
+        run: |
+          mkdir -p .ci-temp
+          curl --fail-with-body -X GET "${PULL_REQUEST_URL}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -o .ci-temp/info.json
+          jq --raw-output .head.ref .ci-temp/info.json > .ci-temp/branch
+          jq --raw-output .head.sha .ci-temp/info.json > .ci-temp/commit_sha
+          echo "ref=$(cat .ci-temp/branch)" >> $GITHUB_OUTPUT
+          echo "commit_sha=$(cat .ci-temp/commit_sha | cut -c 1-7)" >> $GITHUB_OUTPUT
+          echo "GITHUB_OUTPUT:"
+          cat "$GITHUB_OUTPUT"
+
       - name: Fetch all branches and checkout PR
         run: |
           git fetch --all
-          git checkout -b pr-branch ${{ github.event.pull_request.head.sha }}
+          git checkout -b pr-branch ${{ steps.set_branch.outputs.commit_sha }}
           echo "Current branch:"
           git branch --show-current
-          echo "PR Head SHA: ${{ github.event.pull_request.head.sha }}"
-          echo "PR Head Ref: ${{ github.event.pull_request.head.ref }}"
+          echo "PR Head SHA: ${{ steps.set_branch.outputs.commit_sha }}"
+          echo "PR Head Ref: ${{ steps.set_branch.outputs.ref }}"
 
       - name: Get new files
         id: new_files
