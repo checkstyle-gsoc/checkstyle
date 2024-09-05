@@ -33,12 +33,9 @@ jobs:
           jq --raw-output .head.ref .ci-temp/info.json > .ci-temp/branch
           jq --raw-output .head.sha .ci-temp/info.json > .ci-temp/commit_sha
 
-          ./.ci/append-to-github-output.sh "ref" "$(cat .ci-temp/branch)"
-          ./.ci/append-to-github-output.sh "commit_sha" "$(cat .ci-temp/commit_sha | cut -c 1-7)"
-
-          echo "GITHUB_OUTPUT:"
-          echo "$(cat "$GITHUB_OUTPUT")"
-
+          BRANCH_NAME=$(cat .ci-temp/branch)
+          echo "BRANCH_NAME=${BRANCH_NAME}" >> $GITHUB_ENV
+          
       - name: Display fetched branch and commit information
         run: |
           echo "Branch: $(cat .ci-temp/branch)"
@@ -47,7 +44,7 @@ jobs:
       - name: Checkout the PR branch
         uses: actions/checkout@v4
         with:
-          ref: $(cat .ci-temp/branch) # Checkout the PR branch from the JSON file
+          ref: ${{ env.BRANCH_NAME }} # Checkout the PR branch using the env variable
 
       - name: Display current branch
         run: |
