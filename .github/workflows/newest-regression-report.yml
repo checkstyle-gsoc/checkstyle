@@ -214,6 +214,7 @@ jobs:
     outputs:
       config_link: ${{ steps.generated_config_bundle.outputs.config_link }}
       projects_link: ${{ steps.generated_config_bundle.outputs.projects_link }}
+      report_label: ${{ steps.generated_config_bundle.outputs.report_label }}
     steps:
       - name: Restore PR Checkout
         uses: actions/cache@v4
@@ -228,13 +229,14 @@ jobs:
           PR_NUMBER: ${{ github.event.issue.number }}
         run: |
           INPUT_FILE="${{ needs.parse_comment.outputs.input_file }}"
+          
           # Fetch the PR details
           PR_DETAILS="$(curl --fail-with-body -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER")"
 
           # Extract the head repo and ref
-          HEAD_REPO="$(echo $PR_DETAILS | jq -r .head.repo.full_name)"
-          HEAD_REF="$(echo $PR_DETAILS | jq -r .head.ref)"
+          HEAD_REPO="$(echo "$PR_DETAILS" | jq -r .head.repo.full_name)"
+          HEAD_REF="$(echo "$PR_DETAILS" | jq -r .head.ref)"
 
           echo "PR is from $HEAD_REPO branch $HEAD_REF"
 
@@ -306,7 +308,9 @@ jobs:
           # Set the config and project file paths using the script
           ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
           ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
-
+          
+          REPORT_LABEL="Generated config from $(basename "$INPUT_FILE")"
+          ./.ci/append-to-github-output.sh "report_label" "$REPORT_LABEL"
 
       - name: Cache Generated Config and Project Files
         uses: actions/cache@v4
@@ -361,7 +365,10 @@ jobs:
     outputs:
       branch: ${{ steps.set_branch.outputs.ref }}
       commit_sha: ${{ steps.set_branch.outputs.commit_sha }}
-      report_label: ${{ needs.handle_configs_in_pr_description.outputs.report_label }}
+      report_label: ${{
+        needs.handle_configs_in_pr_description.outputs.report_label
+        || needs.handle_generated_config_bundle.outputs.report_label
+      }}
     steps:
       - name: Restore Master Checkstyle Checkout
         uses: actions/cache@v4
