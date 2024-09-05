@@ -271,35 +271,35 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-       - name: Generate config
-         id: generated_config_bundle
-         env:
-           DEFAULT_PROJECTS_LINK: ${{ env.DEFAULT_PROJECTS_LINK }}
-         run: |
-           FOUND_FILE="${{ steps.find_input_file.outputs.input_file }}"
-           BASE_PATH=$(dirname "$FOUND_FILE")
-           OUTPUT_DIR="${{ env.GENERATED_CONFIGS_PATH }}"
-           mkdir -p "$OUTPUT_DIR"
-       
-           # Generate a unique name for the config file
-           CONFIG_FILE_NAME=$(basename "$FOUND_FILE" .java)_config.xml
-           CONFIG_FILE_PATH="$OUTPUT_DIR/$CONFIG_FILE_NAME"
-           PROJECT_FILE_PATH="$OUTPUT_DIR/projects.properties"
-       
-           # Run the extractor
-           java -jar extractor-all-${{env.EXTRACTOR_VERSION}}.jar \
-             "$BASE_PATH" \
-             --input-file "$FOUND_FILE" \
-             "$CONFIG_FILE_PATH" \
-             "$PROJECT_FILE_PATH"
- 
-           # Set the config and project file paths using the script
-           ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
-           ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
- 
-           # Print the contents of the files to the logs
-           # echo "Contents of diff_config.xml:"
-           # cat "$OUTPUT_DIR/$CONFIG_FILE_PATH"
+      - name: Generate config
+        id: generated_config_bundle
+        env:
+          DEFAULT_PROJECTS_LINK: ${{ env.DEFAULT_PROJECTS_LINK }}
+        run: |
+          FOUND_FILE="${{ steps.find_input_file.outputs.input_file }}"
+          BASE_PATH=$(dirname "$FOUND_FILE")
+          OUTPUT_DIR="${{ env.GENERATED_CONFIGS_PATH }}"
+          mkdir -p "$OUTPUT_DIR"
+          
+          # Generate a unique name for the config file
+          CONFIG_FILE_NAME=$(basename "$FOUND_FILE" .java)_config.xml
+          CONFIG_FILE_PATH="$OUTPUT_DIR/$CONFIG_FILE_NAME"
+          PROJECT_FILE_PATH="$OUTPUT_DIR/projects.properties"
+          
+          # Run the extractor
+          java -jar extractor-all-${{env.EXTRACTOR_VERSION}}.jar \
+            "$BASE_PATH" \
+            --input-file "$FOUND_FILE" \
+            "$CONFIG_FILE_PATH" \
+            "$PROJECT_FILE_PATH"
+          
+          # Set the config and project file paths using the script
+          ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
+          ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
+          
+          # Print the contents of the files to the logs
+          # echo "Contents of diff_config.xml:"
+          # cat "$OUTPUT_DIR/$CONFIG_FILE_PATH"
 
       - name: Cache Generated Config and Project Files
         uses: actions/cache@v4
