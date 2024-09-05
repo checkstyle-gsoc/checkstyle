@@ -224,16 +224,49 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
+      - name: Debug Checkout
+        run: |
+          echo "Current directory contents:"
+          ls -la
+          echo "Current git status:"
+          git status
+          echo "Current branch:"
+          git branch --show-current
+          echo "All branches:"
+          git branch -a
+          echo "Git log (last 5 commits):"
+          git log --oneline -n 5
+
       - name: Fetch base branch
         run: |
+          echo "Fetching base branch: ${{ github.base_ref }}"
           git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
+          echo "After fetch, all branches:"
+          git branch -a
 
       - name: Get PR details
         id: pr_details
         run: |
+          echo "GitHub event name: ${{ github.event_name }}"
+          echo "GitHub ref: ${{ github.ref }}"
+          echo "GitHub head ref: ${{ github.head_ref }}"
+          echo "GitHub base ref: ${{ github.base_ref }}"
+          echo "Pull request number: ${{ github.event.pull_request.number }}"
+          echo "Pull request title: ${{ github.event.pull_request.title }}"
           echo "head_sha=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
           echo "base_sha=${{ github.event.pull_request.base.sha }}" >> $GITHUB_OUTPUT
           echo "head_ref=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
+          echo "Output head_sha: ${{ github.event.pull_request.head.sha }}"
+          echo "Output base_sha: ${{ github.event.pull_request.base.sha }}"
+          echo "Output head_ref: ${{ github.event.pull_request.head.ref }}"
+
+      - name: Debug PR details
+        run: |
+          echo "PR Head SHA: ${{ steps.pr_details.outputs.head_sha }}"
+          echo "PR Base SHA: ${{ steps.pr_details.outputs.base_sha }}"
+          echo "PR Head Ref: ${{ steps.pr_details.outputs.head_ref }}"
+          echo "Git diff between base and head:"
+          git diff --name-status ${{ steps.pr_details.outputs.base_sha }} ${{ steps.pr_details.outputs.head_sha }}
 
 
       - name: Get new files
