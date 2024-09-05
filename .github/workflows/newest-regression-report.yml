@@ -297,9 +297,15 @@ jobs:
           ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
           ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
           
-          # Print the contents of the files to the logs
-          echo "Contents of diff_config.xml:"
-          cat "$OUTPUT_DIR/$CONFIG_FILE_PATH"
+          # Print the contents of the config file
+          echo "Contents of $CONFIG_FILE_PATH:"
+          if [ -f "$CONFIG_FILE_PATH" ]; then
+            cat "$CONFIG_FILE_PATH"
+          else
+            echo "Config file not found at $CONFIG_FILE_PATH"
+            echo "Searching for config file:"
+            find . -name "*_config.xml"
+          fi
 
       - name: Cache Generated Config and Project Files
         uses: actions/cache@v4
