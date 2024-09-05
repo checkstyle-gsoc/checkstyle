@@ -277,6 +277,11 @@ jobs:
           # Generate a name for the projects file
           PROJECT_FILE_PATH="$OUTPUT_DIR/projects.properties"
 
+          echo "Debugging Outputs:"
+          echo "FOUND_FILE: $FOUND_FILE"
+          echo "BASE_PATH: $BASE_PATH"
+          echo "OUTPUT_DIR: $OUTPUT_DIR"
+          
           # Run the extractor
             java -jar extractor-all-${{env.EXTRACTOR_VERSION}}.jar \
             "$BASE_PATH" \
@@ -284,10 +289,18 @@ jobs:
             "$CONFIG_FILE_PATH" \
             "$PROJECT_FILE_PATH"
 
+          echo "CONFIG_FILE_NAME: $CONFIG_FILE_NAME"
+          echo "CONFIG_FILE_PATH: $CONFIG_FILE_PATH"
+          echo "PROJECT_FILE_PATH: $PROJECT_FILE_PATH"
+
           # Set the config and project file paths
           ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
           ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
 
+          echo "After running extractor:"
+          echo "Config file created at: $CONFIG_FILE_PATH"
+          echo "Projects file created at: $PROJECT_FILE_PATH"
+    
           # Print the contents of the files to the logs
           echo "Contents of CONFIG_FILE_PATH:"
           cat "$CONFIG_FILE_PATH"
