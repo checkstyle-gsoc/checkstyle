@@ -1,698 +1,698 @@
-#####################################################################################
-# GitHub Action to generate Checkstyle report.
-#
-# Workflow starts when:
-# 1) PR comment - created
-#
-# Requirements:
-# 1) secrets.AWS_ACCESS_KEY_ID - access key for AWS S3 service user
-# 2) secrets.AWS_SECRET_ACCESS_KEY - security access key for AWS S3 service user
-#
-# If you need to change bucket name or region, change AWS_REGION and AWS_BUCKET_NAME variables.
-# For another bucket, you will need to change the secrets.
-#####################################################################################
-name: regression-report-new
-env:
-  AWS_REGION: ap-south-1
-  AWS_BUCKET_NAME: "chesktyler-reports"
-  USER_LOGIN: ${{ github.event.issue.user.login }}
-  # yamllint disable-line rule:line-length
-  DEFAULT_PROJECTS_LINK: "https://raw.githubusercontent.com/checkstyle/test-configs/main/extractor/src/main/resources/list-of-projects.properties"
-  EXTRACTOR_VERSION: 2024-08-27
-  CACHE_KEY_PR: "simple-cache-key-PR-${{ github.sha }}-${{ github.event.comment.id }}"
-  CACHE_KEY_MASTER: "simple-cache-key-MASTER-${{ github.sha }}-${{ github.event.comment.id }}"
-  # yamllint disable-line rule:line-length
-  CACHE_KEY_CONTRIBUTION: "simple-cache-key-CONTRIBUTION-${{ github.sha }}-${{ github.event.comment.id }}"
-  CACHE_KEY_CONFIG_FILES: "config-files-${{ github.sha }}"
-  CACHE_KEY_GENERATED_CONFIGS: "generated-configs-${{ github.sha }}-${{ github.event.comment.id }}"
-  GENERATED_CONFIGS_PATH: generated_configs
+# #####################################################################################
+# # GitHub Action to generate Checkstyle report.
+# #
+# # Workflow starts when:
+# # 1) PR comment - created
+# #
+# # Requirements:
+# # 1) secrets.AWS_ACCESS_KEY_ID - access key for AWS S3 service user
+# # 2) secrets.AWS_SECRET_ACCESS_KEY - security access key for AWS S3 service user
+# #
+# # If you need to change bucket name or region, change AWS_REGION and AWS_BUCKET_NAME variables.
+# # For another bucket, you will need to change the secrets.
+# #####################################################################################
+# name: regression-report-new
+# env:
+#   AWS_REGION: ap-south-1
+#   AWS_BUCKET_NAME: "chesktyler-reports"
+#   USER_LOGIN: ${{ github.event.issue.user.login }}
+#   # yamllint disable-line rule:line-length
+#   DEFAULT_PROJECTS_LINK: "https://raw.githubusercontent.com/checkstyle/test-configs/main/extractor/src/main/resources/list-of-projects.properties"
+#   EXTRACTOR_VERSION: 2024-08-27
+#   CACHE_KEY_PR: "simple-cache-key-PR-${{ github.sha }}-${{ github.event.comment.id }}"
+#   CACHE_KEY_MASTER: "simple-cache-key-MASTER-${{ github.sha }}-${{ github.event.comment.id }}"
+#   # yamllint disable-line rule:line-length
+#   CACHE_KEY_CONTRIBUTION: "simple-cache-key-CONTRIBUTION-${{ github.sha }}-${{ github.event.comment.id }}"
+#   CACHE_KEY_CONFIG_FILES: "config-files-${{ github.sha }}"
+#   CACHE_KEY_GENERATED_CONFIGS: "generated-configs-${{ github.sha }}-${{ github.event.comment.id }}"
+#   GENERATED_CONFIGS_PATH: generated_configs
 
-on:
-  issue_comment:
-    types: [ created ]
+# on:
+#   issue_comment:
+#     types: [ created ]
 
-permissions:
-  contents: read
-  pull-requests: write
+# permissions:
+#   contents: read
+#   pull-requests: write
 
-# concurrency:
-#   group: ${{ github.workflow }}-${{ github.event.issue.number }}
-#   cancel-in-progress: true
+# # concurrency:
+# #   group: ${{ github.workflow }}-${{ github.event.issue.number }}
+# #   cancel-in-progress: true
 
-jobs:
-  check_pr_status:
-    if: |
-      github.event.issue.pull_request
-      && (startsWith(github.event.comment.body, 'Github, generate report for ')
-          ||  startsWith(github.event.comment.body, 'GitHub, generate report for ')
-          ||  startsWith(github.event.comment.body,
-                         'Github, generate report for configs in PR description')
-          ||  startsWith(github.event.comment.body,
-                         'GitHub, generate report for configs in PR description')
-          ||  startsWith(github.event.comment.body,
-                         'Github, generate report by config from')
-          ||  startsWith(github.event.comment.body,
-                         'GitHub, generate report by config from'))
+# jobs:
+#   check_pr_status:
+#     if: |
+#       github.event.issue.pull_request
+#       && (startsWith(github.event.comment.body, 'Github, generate report for ')
+#           ||  startsWith(github.event.comment.body, 'GitHub, generate report for ')
+#           ||  startsWith(github.event.comment.body,
+#                          'Github, generate report for configs in PR description')
+#           ||  startsWith(github.event.comment.body,
+#                          'GitHub, generate report for configs in PR description')
+#           ||  startsWith(github.event.comment.body,
+#                          'Github, generate report by config from')
+#           ||  startsWith(github.event.comment.body,
+#                          'GitHub, generate report by config from'))
 
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check PR status
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_URL: ${{ github.event.issue.pull_request.url }}
-        run: |
-          PR_STATE=$(curl --fail-with-body -s -H "Authorization: token $GITHUB_TOKEN" \
-                     -H "Accept: application/vnd.github.v3+json" \
-                     "$PR_URL" | jq -r .state)
-          if [ "$PR_STATE" != "open" ]; then
-            echo "PR is not active"
-            exit 1
-          fi
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Check PR status
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           PR_URL: ${{ github.event.issue.pull_request.url }}
+#         run: |
+#           PR_STATE=$(curl --fail-with-body -s -H "Authorization: token $GITHUB_TOKEN" \
+#                      -H "Accept: application/vnd.github.v3+json" \
+#                      "$PR_URL" | jq -r .state)
+#           if [ "$PR_STATE" != "open" ]; then
+#             echo "PR is not active"
+#             exit 1
+#           fi
 
-  checkout_and_cache:
-    runs-on: ubuntu-latest
-    needs: [ check_pr_status ]
-    steps:
-      - name: Create .ci-temp directory
-        run: mkdir -p .ci-temp
+#   checkout_and_cache:
+#     runs-on: ubuntu-latest
+#     needs: [ check_pr_status ]
+#     steps:
+#       - name: Create .ci-temp directory
+#         run: mkdir -p .ci-temp
 
-      - name: Checkout Checkstyle root
-        uses: actions/checkout@v4
-        with:
-          repository: checkstyle/checkstyle
-          path: .
+#       - name: Checkout Checkstyle root
+#         uses: actions/checkout@v4
+#         with:
+#           repository: checkstyle/checkstyle
+#           path: .
 
-      - name: Cache Checkstyle root checkout
-        uses: actions/cache@v4
-        with:
-          path: .
-          key: ${{ env.CACHE_KEY_MASTER }}
+#       - name: Cache Checkstyle root checkout
+#         uses: actions/cache@v4
+#         with:
+#           path: .
+#           key: ${{ env.CACHE_KEY_MASTER }}
 
-      - name: Checkout PR branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          path: .
+#       - name: Checkout PR branch
+#         uses: actions/checkout@v4
+#         with:
+#           ref: ${{ github.event.pull_request.head.ref }}
+#           path: .
 
-      - name: Cache PR Checkout
-        uses: actions/cache@v4
-        with:
-          path: .
-          key: ${{ env.CACHE_KEY_PR }}
+#       - name: Cache PR Checkout
+#         uses: actions/cache@v4
+#         with:
+#           path: .
+#           key: ${{ env.CACHE_KEY_PR }}
 
-      - name: Checkout master branch
-        uses: actions/checkout@v4
-        with:
-          repository: checkstyle/checkstyle
-          path: .ci-temp/checkstyle
+#       - name: Checkout master branch
+#         uses: actions/checkout@v4
+#         with:
+#           repository: checkstyle/checkstyle
+#           path: .ci-temp/checkstyle
 
-      - name: Cache checkouts
-        uses: actions/cache@v4
-        with:
-          path: .ci-temp/checkstyle
-          key: ${{ env.CACHE_KEY_MASTER }}
+#       - name: Cache checkouts
+#         uses: actions/cache@v4
+#         with:
+#           path: .ci-temp/checkstyle
+#           key: ${{ env.CACHE_KEY_MASTER }}
 
-      - name: Checkout contribution repository
-        uses: actions/checkout@v4
-        with:
-          repository: checkstyle/contribution
-          path: .ci-temp/contribution
+#       - name: Checkout contribution repository
+#         uses: actions/checkout@v4
+#         with:
+#           repository: checkstyle/contribution
+#           path: .ci-temp/contribution
 
-      - name: Cache contribution checkout
-        uses: actions/cache@v4
-        with:
-          path: .ci-temp/contribution
-          key: ${{ env.CACHE_KEY_CONTRIBUTION }}
+#       - name: Cache contribution checkout
+#         uses: actions/cache@v4
+#         with:
+#           path: .ci-temp/contribution
+#           key: ${{ env.CACHE_KEY_CONTRIBUTION }}
 
-  parse_comment:
-    runs-on: ubuntu-latest
-    needs: [ check_pr_status, checkout_and_cache ]
-    outputs:
-      mode: ${{ steps.parse.outputs.mode }}
-      config_bundle: ${{ steps.parse.outputs.config_bundle }}
-      input_file: ${{ steps.parse.outputs.input_file }}
-    steps:
-      - name: React to comment
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            github.rest.reactions.createForIssueComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: context.payload.comment.id,
-              content: 'rocket'
-            })
+#   parse_comment:
+#     runs-on: ubuntu-latest
+#     needs: [ check_pr_status, checkout_and_cache ]
+#     outputs:
+#       mode: ${{ steps.parse.outputs.mode }}
+#       config_bundle: ${{ steps.parse.outputs.config_bundle }}
+#       input_file: ${{ steps.parse.outputs.input_file }}
+#     steps:
+#       - name: React to comment
+#         uses: actions/github-script@v7
+#         with:
+#           github-token: ${{secrets.GITHUB_TOKEN}}
+#           script: |
+#             github.rest.reactions.createForIssueComment({
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#               comment_id: context.payload.comment.id,
+#               content: 'rocket'
+#             })
 
-      - name: Restore Master Checkstyle Checkout
-        uses: actions/cache@v4
-        with:
-          path: .ci-temp/checkstyle
-          key: "${{ env.CACHE_KEY_MASTER }}"
+#       - name: Restore Master Checkstyle Checkout
+#         uses: actions/cache@v4
+#         with:
+#           path: .ci-temp/checkstyle
+#           key: "${{ env.CACHE_KEY_MASTER }}"
 
-      - name: Restore PR Checkout
-        uses: actions/cache@v4
-        with:
-          path: .
-          key: "${{ env.CACHE_KEY_PR }}"
+#       - name: Restore PR Checkout
+#         uses: actions/cache@v4
+#         with:
+#           path: .
+#           key: "${{ env.CACHE_KEY_PR }}"
 
-      - name: Parse comment
-        id: parse
-        env:
-          COMMENT_BODY: ${{ github.event.comment.body }}
-        run: |
-          PATTERN_FOR_DESCRIPTION='^Git[Hh]ub, generate report for configs in PR description$'
-          PATTERN_FOR='^Git[Hh]ub, generate report for'
-          PATTERN_BY_CONFIG_FROM='^Git[Hh]ub, generate report by config from'
+#       - name: Parse comment
+#         id: parse
+#         env:
+#           COMMENT_BODY: ${{ github.event.comment.body }}
+#         run: |
+#           PATTERN_FOR_DESCRIPTION='^Git[Hh]ub, generate report for configs in PR description$'
+#           PATTERN_FOR='^Git[Hh]ub, generate report for'
+#           PATTERN_BY_CONFIG_FROM='^Git[Hh]ub, generate report by config from'
 
-          if [[ "$COMMENT_BODY" =~ $PATTERN_FOR_DESCRIPTION ]]; then
-            ./.ci/append-to-github-output.sh "mode" "configs_in_pr_description"
+#           if [[ "$COMMENT_BODY" =~ $PATTERN_FOR_DESCRIPTION ]]; then
+#             ./.ci/append-to-github-output.sh "mode" "configs_in_pr_description"
 
-          elif [[ "$COMMENT_BODY" =~ $PATTERN_FOR ]]; then
-            ./.ci/append-to-github-output.sh "mode" "existing_config_bundle"
-            CONFIG_BUNDLE=$(echo "$COMMENT_BODY" | sed -E "s/$PATTERN_FOR //g")
-            ./.ci/append-to-github-output.sh "config_bundle" "$CONFIG_BUNDLE"
+#           elif [[ "$COMMENT_BODY" =~ $PATTERN_FOR ]]; then
+#             ./.ci/append-to-github-output.sh "mode" "existing_config_bundle"
+#             CONFIG_BUNDLE=$(echo "$COMMENT_BODY" | sed -E "s/$PATTERN_FOR //g")
+#             ./.ci/append-to-github-output.sh "config_bundle" "$CONFIG_BUNDLE"
 
-          elif [[ "$COMMENT_BODY" =~ $PATTERN_BY_CONFIG_FROM ]]; then
-            ./.ci/append-to-github-output.sh "mode" "generated_config_bundle"
-            INPUT_FILE=$(echo "$COMMENT_BODY" | sed -E "s/$PATTERN_BY_CONFIG_FROM //g")
-            ./.ci/append-to-github-output.sh "input_file" "$INPUT_FILE"
+#           elif [[ "$COMMENT_BODY" =~ $PATTERN_BY_CONFIG_FROM ]]; then
+#             ./.ci/append-to-github-output.sh "mode" "generated_config_bundle"
+#             INPUT_FILE=$(echo "$COMMENT_BODY" | sed -E "s/$PATTERN_BY_CONFIG_FROM //g")
+#             ./.ci/append-to-github-output.sh "input_file" "$INPUT_FILE"
 
-          else
-            echo "No recognized pattern found in '$COMMENT_BODY'."
-            exit 1
-          fi
+#           else
+#             echo "No recognized pattern found in '$COMMENT_BODY'."
+#             exit 1
+#           fi
 
-  handle_existing_config_bundle:
-    needs: [ parse_comment, checkout_and_cache ]
-    if: needs.parse_comment.outputs.mode == 'existing_config_bundle'
-    runs-on: ubuntu-latest
-    outputs:
-      config_link: ${{ steps.set_links.outputs.config_link }}
-      projects_link: ${{ steps.set_links.outputs.projects_link }}
-    steps:
-      - name: Restore Master Checkstyle Checkout
-        uses: actions/cache@v4
-        with:
-          path: .
-          key: "${{ env.CACHE_KEY_MASTER }}"
+#   handle_existing_config_bundle:
+#     needs: [ parse_comment, checkout_and_cache ]
+#     if: needs.parse_comment.outputs.mode == 'existing_config_bundle'
+#     runs-on: ubuntu-latest
+#     outputs:
+#       config_link: ${{ steps.set_links.outputs.config_link }}
+#       projects_link: ${{ steps.set_links.outputs.projects_link }}
+#     steps:
+#       - name: Restore Master Checkstyle Checkout
+#         uses: actions/cache@v4
+#         with:
+#           path: .
+#           key: "${{ env.CACHE_KEY_MASTER }}"
 
-      - name: Set config and projects links
-        id: set_links
-        run: |
-          BASE_URL="https://raw.githubusercontent.com/checkstyle/test-configs/main"
-          CONFIG_BUNDLE="${{ needs.parse_comment.outputs.config_bundle }}"
-          CONFIG_LINK="$BASE_URL/$CONFIG_BUNDLE/config.xml"
-          PROJECTS_LINK="$BASE_URL/$CONFIG_BUNDLE/list-of-projects.properties"
-          ./.ci/append-to-github-output.sh "config_link" "$CONFIG_LINK"
-          ./.ci/append-to-github-output.sh "projects_link" "$PROJECTS_LINK"
+#       - name: Set config and projects links
+#         id: set_links
+#         run: |
+#           BASE_URL="https://raw.githubusercontent.com/checkstyle/test-configs/main"
+#           CONFIG_BUNDLE="${{ needs.parse_comment.outputs.config_bundle }}"
+#           CONFIG_LINK="$BASE_URL/$CONFIG_BUNDLE/config.xml"
+#           PROJECTS_LINK="$BASE_URL/$CONFIG_BUNDLE/list-of-projects.properties"
+#           ./.ci/append-to-github-output.sh "config_link" "$CONFIG_LINK"
+#           ./.ci/append-to-github-output.sh "projects_link" "$PROJECTS_LINK"
 
-  handle_generated_config_bundle:
-    needs: [ parse_comment, checkout_and_cache ]
-    if: needs.parse_comment.outputs.mode == 'generated_config_bundle'
-    runs-on: ubuntu-latest
-    outputs:
-      config_link: ${{ steps.generated_config_bundle.outputs.config_link }}
-      projects_link: ${{ steps.generated_config_bundle.outputs.projects_link }}
-      report_label: ${{ steps.generated_config_bundle.outputs.report_label }}
-    steps:
-      - name: Restore PR Checkout
-        uses: actions/cache@v4
-        with:
-          path: .
-          key: "${{ env.CACHE_KEY_PR }}"
+#   handle_generated_config_bundle:
+#     needs: [ parse_comment, checkout_and_cache ]
+#     if: needs.parse_comment.outputs.mode == 'generated_config_bundle'
+#     runs-on: ubuntu-latest
+#     outputs:
+#       config_link: ${{ steps.generated_config_bundle.outputs.config_link }}
+#       projects_link: ${{ steps.generated_config_bundle.outputs.projects_link }}
+#       report_label: ${{ steps.generated_config_bundle.outputs.report_label }}
+#     steps:
+#       - name: Restore PR Checkout
+#         uses: actions/cache@v4
+#         with:
+#           path: .
+#           key: "${{ env.CACHE_KEY_PR }}"
 
-      - name: Find input file
-        id: find_input_file
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.issue.number }}
-        run: |
-          INPUT_FILE="${{ needs.parse_comment.outputs.input_file }}"
+#       - name: Find input file
+#         id: find_input_file
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           PR_NUMBER: ${{ github.event.issue.number }}
+#         run: |
+#           INPUT_FILE="${{ needs.parse_comment.outputs.input_file }}"
           
-          # Fetch the PR details
-          PR_DETAILS="$(curl --fail-with-body -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER")"
+#           # Fetch the PR details
+#           PR_DETAILS="$(curl --fail-with-body -s -H "Authorization: token $GITHUB_TOKEN" \
+#             "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER")"
 
-          # Extract the head repo and ref
-          HEAD_REPO="$(echo "$PR_DETAILS" | jq -r .head.repo.full_name)"
-          HEAD_REF="$(echo "$PR_DETAILS" | jq -r .head.ref)"
+#           # Extract the head repo and ref
+#           HEAD_REPO="$(echo "$PR_DETAILS" | jq -r .head.repo.full_name)"
+#           HEAD_REF="$(echo "$PR_DETAILS" | jq -r .head.ref)"
 
-          echo "PR is from $HEAD_REPO branch $HEAD_REF"
+#           echo "PR is from $HEAD_REPO branch $HEAD_REF"
 
-          # Fetch the file content
-          FILE_CONTENT=$(curl --fail-with-body -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://raw.githubusercontent.com/$HEAD_REPO/$HEAD_REF/$INPUT_FILE")
+#           # Fetch the file content
+#           FILE_CONTENT=$(curl --fail-with-body -s -H "Authorization: token $GITHUB_TOKEN" \
+#             "https://raw.githubusercontent.com/$HEAD_REPO/$HEAD_REF/$INPUT_FILE")
 
-          if [ -z "$FILE_CONTENT" ]; then
-            echo "Error: Could not fetch file content"
-            exit 1
-          fi
+#           if [ -z "$FILE_CONTENT" ]; then
+#             echo "Error: Could not fetch file content"
+#             exit 1
+#           fi
 
-          # Create the file locally with the correct structure
-          TEMP_DIR=$(mktemp -d)
-          TEMP_FILE="$TEMP_DIR/$INPUT_FILE"
-          mkdir -p $(dirname "$TEMP_FILE")
-          echo "$FILE_CONTENT" > "$TEMP_FILE"
+#           # Create the file locally with the correct structure
+#           TEMP_DIR=$(mktemp -d)
+#           TEMP_FILE="$TEMP_DIR/$INPUT_FILE"
+#           mkdir -p $(dirname "$TEMP_FILE")
+#           echo "$FILE_CONTENT" > "$TEMP_FILE"
 
-          echo "File contents:"
-          cat "$TEMP_FILE"
+#           echo "File contents:"
+#           cat "$TEMP_FILE"
 
-          ./.ci/append-to-github-output.sh "input_file" "$TEMP_FILE"
+#           ./.ci/append-to-github-output.sh "input_file" "$TEMP_FILE"
 
-      - name: Download Extractor JAR
-        uses: robinraju/release-downloader@v1.8
-        with:
-          repository: "checkstyle/test-configs"
-          tag: "extractor-${{env.EXTRACTOR_VERSION}}"
-          fileName: "extractor-all-${{env.EXTRACTOR_VERSION}}.jar"
+#       - name: Download Extractor JAR
+#         uses: robinraju/release-downloader@v1.8
+#         with:
+#           repository: "checkstyle/test-configs"
+#           tag: "extractor-${{env.EXTRACTOR_VERSION}}"
+#           fileName: "extractor-all-${{env.EXTRACTOR_VERSION}}.jar"
 
-      - name: Set up Java 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
+#       - name: Set up Java 21
+#         uses: actions/setup-java@v4
+#         with:
+#           distribution: 'temurin'
+#           java-version: '21'
 
-      - name: Generate config
-        id: generated_config_bundle
-        env:
-          DEFAULT_PROJECTS_LINK: ${{ env.DEFAULT_PROJECTS_LINK }}
-        run: |
-          FOUND_FILE="${{ steps.find_input_file.outputs.input_file }}"
-          BASE_PATH=$(dirname "$FOUND_FILE")
-          OUTPUT_DIR="${{ env.GENERATED_CONFIGS_PATH }}"
-          mkdir -p "$OUTPUT_DIR"
+#       - name: Generate config
+#         id: generated_config_bundle
+#         env:
+#           DEFAULT_PROJECTS_LINK: ${{ env.DEFAULT_PROJECTS_LINK }}
+#         run: |
+#           FOUND_FILE="${{ steps.find_input_file.outputs.input_file }}"
+#           BASE_PATH=$(dirname "$FOUND_FILE")
+#           OUTPUT_DIR="${{ env.GENERATED_CONFIGS_PATH }}"
+#           mkdir -p "$OUTPUT_DIR"
 
-          # Generate a unique name for the config file
-          CONFIG_FILE_NAME=$(basename "$FOUND_FILE" .java)_config.xml
-          CONFIG_FILE_PATH="$OUTPUT_DIR/$CONFIG_FILE_NAME"
-          PROJECT_FILE_PATH="$OUTPUT_DIR/projects.properties"
+#           # Generate a unique name for the config file
+#           CONFIG_FILE_NAME=$(basename "$FOUND_FILE" .java)_config.xml
+#           CONFIG_FILE_PATH="$OUTPUT_DIR/$CONFIG_FILE_NAME"
+#           PROJECT_FILE_PATH="$OUTPUT_DIR/projects.properties"
 
-          # Run the extractor
-          java -jar extractor-all-${{env.EXTRACTOR_VERSION}}.jar \
-            "$BASE_PATH" \
-            --input-file "$FOUND_FILE" \
-            "$CONFIG_FILE_PATH" \
-            "$PROJECT_FILE_PATH"
+#           # Run the extractor
+#           java -jar extractor-all-${{env.EXTRACTOR_VERSION}}.jar \
+#             "$BASE_PATH" \
+#             --input-file "$FOUND_FILE" \
+#             "$CONFIG_FILE_PATH" \
+#             "$PROJECT_FILE_PATH"
 
-          # Print the contents of the config file
-          echo "Contents of $CONFIG_FILE_PATH:"
-          if [ -f "$CONFIG_FILE_PATH" ]; then
-            cat "$CONFIG_FILE_PATH"
-          else
-            echo "Config file not found at $CONFIG_FILE_PATH"
-            echo "Searching for config file:"
-            find . -name "*_config.xml"
-          fi
+#           # Print the contents of the config file
+#           echo "Contents of $CONFIG_FILE_PATH:"
+#           if [ -f "$CONFIG_FILE_PATH" ]; then
+#             cat "$CONFIG_FILE_PATH"
+#           else
+#             echo "Config file not found at $CONFIG_FILE_PATH"
+#             echo "Searching for config file:"
+#             find . -name "*_config.xml"
+#           fi
 
-          # Set the config and project file paths using the script
-          ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
-          ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
+#           # Set the config and project file paths using the script
+#           ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
+#           ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
           
-          REPORT_LABEL="Generated config from $(basename "$INPUT_FILE")"
-          ./.ci/append-to-github-output.sh "report_label" "$REPORT_LABEL"
+#           REPORT_LABEL="Generated config from $(basename "$INPUT_FILE")"
+#           ./.ci/append-to-github-output.sh "report_label" "$REPORT_LABEL"
 
-      - name: Cache Generated Config and Project Files
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.GENERATED_CONFIGS_PATH }}
-          key: ${{ env.CACHE_KEY_GENERATED_CONFIGS }}
+#       - name: Cache Generated Config and Project Files
+#         uses: actions/cache@v4
+#         with:
+#           path: ${{ env.GENERATED_CONFIGS_PATH }}
+#           key: ${{ env.CACHE_KEY_GENERATED_CONFIGS }}
 
-  handle_configs_in_pr_description:
-    needs: [ parse_comment, checkout_and_cache ]
-    if: needs.parse_comment.outputs.mode == 'configs_in_pr_description'
-    runs-on: ubuntu-latest
-    outputs:
-      config_link: ${{ steps.parse_description.outputs.config_link }}
-      projects_link: ${{ steps.parse_description.outputs.projects_link }}
-      report_label: ${{ steps.parse_description.outputs.report_label }}
-    steps:
-      - name: Restore Master Checkstyle Checkout
-        uses: actions/cache@v4
-        with:
-          path: .
-          key: "${{ env.CACHE_KEY_MASTER }}"
+#   handle_configs_in_pr_description:
+#     needs: [ parse_comment, checkout_and_cache ]
+#     if: needs.parse_comment.outputs.mode == 'configs_in_pr_description'
+#     runs-on: ubuntu-latest
+#     outputs:
+#       config_link: ${{ steps.parse_description.outputs.config_link }}
+#       projects_link: ${{ steps.parse_description.outputs.projects_link }}
+#       report_label: ${{ steps.parse_description.outputs.report_label }}
+#     steps:
+#       - name: Restore Master Checkstyle Checkout
+#         uses: actions/cache@v4
+#         with:
+#           path: .
+#           key: "${{ env.CACHE_KEY_MASTER }}"
 
-      - name: Getting PR description
-        env:
-          ISSUE_BODY: ${{ github.event.issue.body }}
-          PULL_REQUEST_URL: ${{ github.event.issue.pull_request.url }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p .ci-temp
-          # convert windows line endings to unix in event text
-          echo "$ISSUE_BODY" > .ci-temp/windows.txt
-          tr -d '\15\32' < .ci-temp/windows.txt > .ci-temp/text
+#       - name: Getting PR description
+#         env:
+#           ISSUE_BODY: ${{ github.event.issue.body }}
+#           PULL_REQUEST_URL: ${{ github.event.issue.pull_request.url }}
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         run: |
+#           mkdir -p .ci-temp
+#           # convert windows line endings to unix in event text
+#           echo "$ISSUE_BODY" > .ci-temp/windows.txt
+#           tr -d '\15\32' < .ci-temp/windows.txt > .ci-temp/text
 
-      - name: Parsing content of PR description
-        id: parse_description
-        run: |
-          ./.ci/diff-report.sh parse-pr-description-text
+#       - name: Parsing content of PR description
+#         id: parse_description
+#         run: |
+#           ./.ci/diff-report.sh parse-pr-description-text
 
-  download_configs:
-    needs: [
-      parse_comment,
-      handle_existing_config_bundle,
-      handle_generated_config_bundle,
-      handle_configs_in_pr_description
-    ]
-    if: |
-      always() &&
-      (needs.handle_existing_config_bundle.result == 'success'
-        || needs.handle_generated_config_bundle.result == 'success'
-        || needs.handle_configs_in_pr_description.result == 'success')
-    runs-on: ubuntu-latest
-    outputs:
-      branch: ${{ steps.set_branch.outputs.ref }}
-      commit_sha: ${{ steps.set_branch.outputs.commit_sha }}
-      report_label: >-
-        ${{ 
-          needs.handle_configs_in_pr_description.outputs.report_label || 
-          needs.handle_generated_config_bundle.outputs.report_label 
-        }}
-    steps:
-      - name: Restore Master Checkstyle Checkout
-        uses: actions/cache@v4
-        with:
-          path: .
-          key: "${{ env.CACHE_KEY_MASTER }}"
+#   download_configs:
+#     needs: [
+#       parse_comment,
+#       handle_existing_config_bundle,
+#       handle_generated_config_bundle,
+#       handle_configs_in_pr_description
+#     ]
+#     if: |
+#       always() &&
+#       (needs.handle_existing_config_bundle.result == 'success'
+#         || needs.handle_generated_config_bundle.result == 'success'
+#         || needs.handle_configs_in_pr_description.result == 'success')
+#     runs-on: ubuntu-latest
+#     outputs:
+#       branch: ${{ steps.set_branch.outputs.ref }}
+#       commit_sha: ${{ steps.set_branch.outputs.commit_sha }}
+#       report_label: >-
+#         ${{ 
+#           needs.handle_configs_in_pr_description.outputs.report_label || 
+#           needs.handle_generated_config_bundle.outputs.report_label 
+#         }}
+#     steps:
+#       - name: Restore Master Checkstyle Checkout
+#         uses: actions/cache@v4
+#         with:
+#           path: .
+#           key: "${{ env.CACHE_KEY_MASTER }}"
 
-      - name: Restore Generated Config and Project Files
-        if: needs.handle_generated_config_bundle.result == 'success'
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.GENERATED_CONFIGS_PATH }}
-          key: ${{ env.CACHE_KEY_GENERATED_CONFIGS }}
+#       - name: Restore Generated Config and Project Files
+#         if: needs.handle_generated_config_bundle.result == 'success'
+#         uses: actions/cache@v4
+#         with:
+#           path: ${{ env.GENERATED_CONFIGS_PATH }}
+#           key: ${{ env.CACHE_KEY_GENERATED_CONFIGS }}
 
-      - name: Process local-based generated Config and Project File
-        if: needs.handle_generated_config_bundle.result == 'success'
-        env:
-          DIFF_CONFIG_LINK: ${{ needs.handle_generated_config_bundle.outputs.config_link }}
-          DIFF_PROJECTS_LINK: ${{ needs.handle_generated_config_bundle.outputs.projects_link }}
-        run: |
-          mkdir -p .ci-temp
-          echo "Config link: $DIFF_CONFIG_LINK"
-          echo "Projects link: $DIFF_PROJECTS_LINK"
-          cp "$DIFF_CONFIG_LINK" .ci-temp/diff_config.xml
-          cp "$DIFF_PROJECTS_LINK" .ci-temp/project.properties
+#       - name: Process local-based generated Config and Project File
+#         if: needs.handle_generated_config_bundle.result == 'success'
+#         env:
+#           DIFF_CONFIG_LINK: ${{ needs.handle_generated_config_bundle.outputs.config_link }}
+#           DIFF_PROJECTS_LINK: ${{ needs.handle_generated_config_bundle.outputs.projects_link }}
+#         run: |
+#           mkdir -p .ci-temp
+#           echo "Config link: $DIFF_CONFIG_LINK"
+#           echo "Projects link: $DIFF_PROJECTS_LINK"
+#           cp "$DIFF_CONFIG_LINK" .ci-temp/diff_config.xml
+#           cp "$DIFF_PROJECTS_LINK" .ci-temp/project.properties
 
-      - name: Download URL-based Config and Project File
-        id: download_files
-        if: needs.handle_existing_config_bundle.result == 'success'
-          || needs.handle_configs_in_pr_description.result == 'success'
-        env:
-          DIFF_CONFIG_LINK: ${{
-            needs.handle_existing_config_bundle.outputs.config_link
-            || needs.handle_configs_in_pr_description.outputs.config_link
-            }}
-          DIFF_PROJECTS_LINK: ${{
-            needs.handle_existing_config_bundle.outputs.projects_link
-            || needs.handle_configs_in_pr_description.outputs.projects_link
-            || env.DEFAULT_PROJECTS_LINK
-            }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p .ci-temp
-          if ! ./.ci/diff-report.sh download-files; then
-            ./.ci/append-to-github-output.sh "failed" "true"
-            exit 1
-          fi
+#       - name: Download URL-based Config and Project File
+#         id: download_files
+#         if: needs.handle_existing_config_bundle.result == 'success'
+#           || needs.handle_configs_in_pr_description.result == 'success'
+#         env:
+#           DIFF_CONFIG_LINK: ${{
+#             needs.handle_existing_config_bundle.outputs.config_link
+#             || needs.handle_configs_in_pr_description.outputs.config_link
+#             }}
+#           DIFF_PROJECTS_LINK: ${{
+#             needs.handle_existing_config_bundle.outputs.projects_link
+#             || needs.handle_configs_in_pr_description.outputs.projects_link
+#             || env.DEFAULT_PROJECTS_LINK
+#             }}
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         run: |
+#           mkdir -p .ci-temp
+#           if ! ./.ci/diff-report.sh download-files; then
+#             ./.ci/append-to-github-output.sh "failed" "true"
+#             exit 1
+#           fi
 
-      - name: Set branch
-        env:
-          PULL_REQUEST_URL: ${{ github.event.issue.pull_request.url }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        id: set_branch
-        run: |
-          mkdir -p .ci-temp
-          curl --fail-with-body -X GET "${PULL_REQUEST_URL}" \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: token $GITHUB_TOKEN" \
-              -o .ci-temp/info.json
+#       - name: Set branch
+#         env:
+#           PULL_REQUEST_URL: ${{ github.event.issue.pull_request.url }}
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         id: set_branch
+#         run: |
+#           mkdir -p .ci-temp
+#           curl --fail-with-body -X GET "${PULL_REQUEST_URL}" \
+#               -H "Accept: application/vnd.github+json" \
+#               -H "Authorization: token $GITHUB_TOKEN" \
+#               -o .ci-temp/info.json
 
-          jq --raw-output .head.ref .ci-temp/info.json > .ci-temp/branch
-          jq --raw-output .head.sha .ci-temp/info.json > .ci-temp/commit_sha
+#           jq --raw-output .head.ref .ci-temp/info.json > .ci-temp/branch
+#           jq --raw-output .head.sha .ci-temp/info.json > .ci-temp/commit_sha
 
-          ./.ci/append-to-github-output.sh "ref" "$(cat .ci-temp/branch)"
-          # shellcheck disable=SC2002
-          ./.ci/append-to-github-output.sh "commit_sha" "$(cat .ci-temp/commit_sha | cut -c 1-7)"
+#           ./.ci/append-to-github-output.sh "ref" "$(cat .ci-temp/branch)"
+#           # shellcheck disable=SC2002
+#           ./.ci/append-to-github-output.sh "commit_sha" "$(cat .ci-temp/commit_sha | cut -c 1-7)"
 
-          echo "GITHUB_OUTPUT:"
-          # need to 'echo' to see output in Github CI
-          # shellcheck disable=SC2005
-          echo "$(cat "$GITHUB_OUTPUT")"
+#           echo "GITHUB_OUTPUT:"
+#           # need to 'echo' to see output in Github CI
+#           # shellcheck disable=SC2005
+#           echo "$(cat "$GITHUB_OUTPUT")"
 
-      - name: Cache config files
-        uses: actions/cache@v4
-        with:
-          path: |
-            .ci-temp/*.xml
-            .ci-temp/project.properties
-          key: ${{ env.CACHE_KEY_CONFIG_FILES }}
+#       - name: Cache config files
+#         uses: actions/cache@v4
+#         with:
+#           path: |
+#             .ci-temp/*.xml
+#             .ci-temp/project.properties
+#           key: ${{ env.CACHE_KEY_CONFIG_FILES }}
 
-  make_report:
-    needs: [ download_configs ]
-    if: always() && needs.download_configs.result == 'success'
-    runs-on: ubuntu-latest
-    outputs:
-      message: ${{ steps.out.outputs.message }}
-    steps:
-      - name: Restore Master Checkstyle Checkout
-        uses: actions/cache@v4
-        with:
-          path: .ci-temp/checkstyle
-          key: "${{ env.CACHE_KEY_MASTER }}"
+#   make_report:
+#     needs: [ download_configs ]
+#     if: always() && needs.download_configs.result == 'success'
+#     runs-on: ubuntu-latest
+#     outputs:
+#       message: ${{ steps.out.outputs.message }}
+#     steps:
+#       - name: Restore Master Checkstyle Checkout
+#         uses: actions/cache@v4
+#         with:
+#           path: .ci-temp/checkstyle
+#           key: "${{ env.CACHE_KEY_MASTER }}"
 
-      - name: Restore PR Checkout
-        uses: actions/cache@v4
-        with:
-          path: .
-          key: "${{ env.CACHE_KEY_PR }}"
+#       - name: Restore PR Checkout
+#         uses: actions/cache@v4
+#         with:
+#           path: .
+#           key: "${{ env.CACHE_KEY_PR }}"
 
-      - name: Restore config files from cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            .ci-temp/*.xml
-            .ci-temp/project.properties
-          key: ${{ env.CACHE_KEY_CONFIG_FILES }}
+#       - name: Restore config files from cache
+#         uses: actions/cache@v4
+#         with:
+#           path: |
+#             .ci-temp/*.xml
+#             .ci-temp/project.properties
+#           key: ${{ env.CACHE_KEY_CONFIG_FILES }}
 
-      - name: Set upstream
-        run: |
-          bash
-          cd .ci-temp/checkstyle
-          MAIN_REPO_GIT_URL="https://github.com/checkstyle/checkstyle.git"
-          git remote add upstream "$MAIN_REPO_GIT_URL"
-          git fetch upstream
-          FORK_REPO_GIT_URL="https://github.com/$USER_LOGIN/checkstyle.git"
-          git remote add forked "$FORK_REPO_GIT_URL"
-          git fetch forked
+#       - name: Set upstream
+#         run: |
+#           bash
+#           cd .ci-temp/checkstyle
+#           MAIN_REPO_GIT_URL="https://github.com/checkstyle/checkstyle.git"
+#           git remote add upstream "$MAIN_REPO_GIT_URL"
+#           git fetch upstream
+#           FORK_REPO_GIT_URL="https://github.com/$USER_LOGIN/checkstyle.git"
+#           git remote add forked "$FORK_REPO_GIT_URL"
+#           git fetch forked
 
-      - name: Setup local maven cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: checkstyle-maven-cache-${{ hashFiles('**/pom.xml') }}
+#       - name: Setup local maven cache
+#         uses: actions/cache@v4
+#         with:
+#           path: ~/.m2/repository
+#           key: checkstyle-maven-cache-${{ hashFiles('**/pom.xml') }}
 
-      - name: Restore Contribution Checkout
-        uses: actions/cache@v4
-        with:
-          path: .ci-temp/contribution
-          key: "${{ env.CACHE_KEY_CONTRIBUTION }}"
+#       - name: Restore Contribution Checkout
+#         uses: actions/cache@v4
+#         with:
+#           path: .ci-temp/contribution
+#           key: "${{ env.CACHE_KEY_CONTRIBUTION }}"
 
-      - name: Prepare environment
-        run: |
-          mv .ci-temp/project.properties ./.ci-temp/contribution/checkstyle-tester/
-          mv .ci-temp/*.xml ./.ci-temp/contribution/checkstyle-tester/
-          sudo apt install groovy
+#       - name: Prepare environment
+#         run: |
+#           mv .ci-temp/project.properties ./.ci-temp/contribution/checkstyle-tester/
+#           mv .ci-temp/*.xml ./.ci-temp/contribution/checkstyle-tester/
+#           sudo apt install groovy
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+#       - name: Configure AWS Credentials
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Print config.xml
-        run: |
-          echo "Contents of config.xml:"
-          echo "-------------------------"
-          if [ -f .ci-temp/contribution/checkstyle-tester/diff_config.xml ]; then
-            cat .ci-temp/contribution/checkstyle-tester/diff_config.xml
-          else
-            echo "diff_config.xml not found"
-          fi
-          echo "-------------------------"
+#       - name: Print config.xml
+#         run: |
+#           echo "Contents of config.xml:"
+#           echo "-------------------------"
+#           if [ -f .ci-temp/contribution/checkstyle-tester/diff_config.xml ]; then
+#             cat .ci-temp/contribution/checkstyle-tester/diff_config.xml
+#           else
+#             echo "diff_config.xml not found"
+#           fi
+#           echo "-------------------------"
 
-      - name: Print project.properties
-        run: |
-          echo "Contents of project.properties:"
-          echo "-------------------------------"
-          if [ -f .ci-temp/contribution/checkstyle-tester/project.properties ]; then
-            cat .ci-temp/contribution/checkstyle-tester/project.properties
-          else
-            echo "project.properties not found"
-          fi
-          echo "-------------------------------"
+#       - name: Print project.properties
+#         run: |
+#           echo "Contents of project.properties:"
+#           echo "-------------------------------"
+#           if [ -f .ci-temp/contribution/checkstyle-tester/project.properties ]; then
+#             cat .ci-temp/contribution/checkstyle-tester/project.properties
+#           else
+#             echo "project.properties not found"
+#           fi
+#           echo "-------------------------------"
 
-      - name: Generate report
-        env:
-          BRANCH: ${{ needs.download_configs.outputs.branch }}
-        run: |
-          cd .ci-temp/contribution/checkstyle-tester
-          bash
-          REF="forked/$BRANCH"
-          REPO="${{ github.workspace }}/.ci-temp/checkstyle"
-          BASE_BRANCH="upstream/master"
-          export MAVEN_OPTS="-Xmx5g"
-          if [ -f new_module_config.xml ]; then
-            groovy diff.groovy -r "$REPO" -p "$REF" -pc new_module_config.xml -m single\
-              -l project.properties -xm "-Dcheckstyle.failsOnError=false"\
-              --allowExcludes
-          elif [ -f patch_config.xml ]; then
-            groovy diff.groovy -r "$REPO" -b "$BASE_BRANCH" -p "$REF" -bc diff_config.xml\
-              -pc patch_config.xml -l project.properties -xm "-Dcheckstyle.failsOnError=false"\
-              --allowExcludes
-          else
-            groovy diff.groovy -r "$REPO" -b "$BASE_BRANCH" -p "$REF" -c diff_config.xml\
-              -l project.properties -xm "-Dcheckstyle.failsOnError=false"\
-              --allowExcludes
-          fi
+#       - name: Generate report
+#         env:
+#           BRANCH: ${{ needs.download_configs.outputs.branch }}
+#         run: |
+#           cd .ci-temp/contribution/checkstyle-tester
+#           bash
+#           REF="forked/$BRANCH"
+#           REPO="${{ github.workspace }}/.ci-temp/checkstyle"
+#           BASE_BRANCH="upstream/master"
+#           export MAVEN_OPTS="-Xmx5g"
+#           if [ -f new_module_config.xml ]; then
+#             groovy diff.groovy -r "$REPO" -p "$REF" -pc new_module_config.xml -m single\
+#               -l project.properties -xm "-Dcheckstyle.failsOnError=false"\
+#               --allowExcludes
+#           elif [ -f patch_config.xml ]; then
+#             groovy diff.groovy -r "$REPO" -b "$BASE_BRANCH" -p "$REF" -bc diff_config.xml\
+#               -pc patch_config.xml -l project.properties -xm "-Dcheckstyle.failsOnError=false"\
+#               --allowExcludes
+#           else
+#             groovy diff.groovy -r "$REPO" -b "$BASE_BRANCH" -p "$REF" -c diff_config.xml\
+#               -l project.properties -xm "-Dcheckstyle.failsOnError=false"\
+#               --allowExcludes
+#           fi
 
-      - name: Copy Report to AWS S3 Bucket
-        env:
-          LABEL: ${{ needs.download_configs.outputs.report_label }}
-        run: |
-          bash
-          TIME=$(date +%Y%H%M%S)
-          FOLDER="${{needs.download_configs.outputs.commit_sha}}_$TIME"
-          DIFF="./.ci-temp/contribution/checkstyle-tester/reports/diff"
-          LINK="https://${{env.AWS_BUCKET_NAME}}.s3.${{env.AWS_REGION}}.amazonaws.com"
-          aws s3 cp $DIFF "s3://${{env.AWS_BUCKET_NAME}}/$FOLDER/reports/diff/" --recursive
-          if [ -n "$LABEL" ]; then
-            echo "$LABEL: " > .ci-temp/message
-          fi
-          echo "$LINK/$FOLDER/reports/diff/index.html" >> .ci-temp/message
+#       - name: Copy Report to AWS S3 Bucket
+#         env:
+#           LABEL: ${{ needs.download_configs.outputs.report_label }}
+#         run: |
+#           bash
+#           TIME=$(date +%Y%H%M%S)
+#           FOLDER="${{needs.download_configs.outputs.commit_sha}}_$TIME"
+#           DIFF="./.ci-temp/contribution/checkstyle-tester/reports/diff"
+#           LINK="https://${{env.AWS_BUCKET_NAME}}.s3.${{env.AWS_REGION}}.amazonaws.com"
+#           aws s3 cp $DIFF "s3://${{env.AWS_BUCKET_NAME}}/$FOLDER/reports/diff/" --recursive
+#           if [ -n "$LABEL" ]; then
+#             echo "$LABEL: " > .ci-temp/message
+#           fi
+#           echo "$LINK/$FOLDER/reports/diff/index.html" >> .ci-temp/message
 
-      - name: Set output
-        id: out
-        run: |
-          ./.ci/append-to-github-output.sh "message" "$(cat .ci-temp/message)"
+#       - name: Set output
+#         id: out
+#         run: |
+#           ./.ci/append-to-github-output.sh "message" "$(cat .ci-temp/message)"
 
-  add_sad_Emoji:
-    needs: [ check_pr_status, parse_comment, make_report ]
-    if: cancelled()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Add sad Emoji
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            github.rest.reactions.createForIssueComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: context.payload.comment.id,
-              content: 'confused'
-            });
+#   add_sad_Emoji:
+#     needs: [ check_pr_status, parse_comment, make_report ]
+#     if: cancelled()
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Add sad Emoji
+#         uses: actions/github-script@v7
+#         with:
+#           github-token: ${{secrets.GITHUB_TOKEN}}
+#           script: |
+#             github.rest.reactions.createForIssueComment({
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#               comment_id: context.payload.comment.id,
+#               content: 'confused'
+#             });
 
-  # should be always last step
-  send_message:
-    runs-on: ubuntu-latest
-    needs: [
-      handle_generated_config_bundle,
-      download_configs,
-      make_report ]
-    if: always()
-      && (needs.make_report.result == 'failure'
-          || needs.make_report.outputs.message != ''
-          || needs.download_configs.result == 'failure'
-          || needs.handle_generated_config_bundle.result == 'failure')
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+#   # should be always last step
+#   send_message:
+#     runs-on: ubuntu-latest
+#     needs: [
+#       handle_generated_config_bundle,
+#       download_configs,
+#       make_report ]
+#     if: always()
+#       && (needs.make_report.result == 'failure'
+#           || needs.make_report.outputs.message != ''
+#           || needs.download_configs.result == 'failure'
+#           || needs.handle_generated_config_bundle.result == 'failure')
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
 
-      - name: Get message
-        env:
-          MSG: ${{ needs.make_report.outputs.message }}
-          DOWNLOAD_RESULT: ${{ needs.download_configs.result }}
-          MAKE_REPORT_RESULT: ${{ needs.make_report.result }}
-          GENERATED_CONFIG_RESULT: ${{ needs.handle_generated_config_bundle.result }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p .ci-temp
-          JOBS_LINK="https://github.com/checkstyle/checkstyle/actions/runs/${{github.run_id}}"
-          if [ "$DOWNLOAD_RESULT" == "failure" ]; then
-            {
-              echo "Failed to download or process the specified configuration(s)."
-              echo "Error details: $DOWNLOAD_ERROR"
-              echo "<br>Please ensure you've used one of the following commands correctly:"
-              echo "- 'GitHub, generate report for <config_bundle_path>'"
-              echo "- 'GitHub, generate report by config from <file_path>'"
-              echo "- 'GitHub, generate report for configs in PR description'"
-              echo "<br>And check that all specified configs or files exist and are valid."
-              echo "<br>Link: $JOBS_LINK"
-            } > .ci-temp/message
-          elif [ "$GENERATED_CONFIG_RESULT" == "failure" ]; then
-            {
-              echo "Failed to generate config from the specified file."
-              echo "Please ensure the file exists and the path is correct."
-              echo "<br>Usage: 'GitHub, generate report by config from <file_path>'"
-              echo "<br>Link: $JOBS_LINK"
-            } > .ci-temp/message
-          elif [ "$MAKE_REPORT_RESULT" == "failure" ]; then
-            {
-              echo "Report generation failed. Please check the logs for more details."
-              echo "<br>Link: $JOBS_LINK"
-            } > .ci-temp/message
-          elif [ -z "$MSG" ]; then
-            API_LINK="https://api.github.com/repos/checkstyle/checkstyle/actions/runs/${{github.run_id}}/jobs"
-            curl --fail-with-body -X GET "${API_LINK}" \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: token $GITHUB_TOKEN" \
-              -o .ci-temp/info.json
-            jq '.jobs' .ci-temp/info.json > ".ci-temp/jobs"
-            jq '.[] | select(.conclusion == "failure") | .name' .ci-temp/jobs > .ci-temp/job_name
-            jq '.[] | select(.conclusion == "failure") | .steps' .ci-temp/jobs > .ci-temp/steps
-            jq '.[] | select(.conclusion == "failure") | .name' .ci-temp/steps > .ci-temp/step_name
-            {
-              echo "Report generation failed on phase $(cat .ci-temp/job_name),"
-              echo "step $(cat .ci-temp/step_name)."
-              echo "<br>Link: $JOBS_LINK"
-            } > .ci-temp/message
-          else
-            echo "$MSG" > .ci-temp/message
-          fi
+#       - name: Get message
+#         env:
+#           MSG: ${{ needs.make_report.outputs.message }}
+#           DOWNLOAD_RESULT: ${{ needs.download_configs.result }}
+#           MAKE_REPORT_RESULT: ${{ needs.make_report.result }}
+#           GENERATED_CONFIG_RESULT: ${{ needs.handle_generated_config_bundle.result }}
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         run: |
+#           mkdir -p .ci-temp
+#           JOBS_LINK="https://github.com/checkstyle/checkstyle/actions/runs/${{github.run_id}}"
+#           if [ "$DOWNLOAD_RESULT" == "failure" ]; then
+#             {
+#               echo "Failed to download or process the specified configuration(s)."
+#               echo "Error details: $DOWNLOAD_ERROR"
+#               echo "<br>Please ensure you've used one of the following commands correctly:"
+#               echo "- 'GitHub, generate report for <config_bundle_path>'"
+#               echo "- 'GitHub, generate report by config from <file_path>'"
+#               echo "- 'GitHub, generate report for configs in PR description'"
+#               echo "<br>And check that all specified configs or files exist and are valid."
+#               echo "<br>Link: $JOBS_LINK"
+#             } > .ci-temp/message
+#           elif [ "$GENERATED_CONFIG_RESULT" == "failure" ]; then
+#             {
+#               echo "Failed to generate config from the specified file."
+#               echo "Please ensure the file exists and the path is correct."
+#               echo "<br>Usage: 'GitHub, generate report by config from <file_path>'"
+#               echo "<br>Link: $JOBS_LINK"
+#             } > .ci-temp/message
+#           elif [ "$MAKE_REPORT_RESULT" == "failure" ]; then
+#             {
+#               echo "Report generation failed. Please check the logs for more details."
+#               echo "<br>Link: $JOBS_LINK"
+#             } > .ci-temp/message
+#           elif [ -z "$MSG" ]; then
+#             API_LINK="https://api.github.com/repos/checkstyle/checkstyle/actions/runs/${{github.run_id}}/jobs"
+#             curl --fail-with-body -X GET "${API_LINK}" \
+#               -H "Accept: application/vnd.github+json" \
+#               -H "Authorization: token $GITHUB_TOKEN" \
+#               -o .ci-temp/info.json
+#             jq '.jobs' .ci-temp/info.json > ".ci-temp/jobs"
+#             jq '.[] | select(.conclusion == "failure") | .name' .ci-temp/jobs > .ci-temp/job_name
+#             jq '.[] | select(.conclusion == "failure") | .steps' .ci-temp/jobs > .ci-temp/steps
+#             jq '.[] | select(.conclusion == "failure") | .name' .ci-temp/steps > .ci-temp/step_name
+#             {
+#               echo "Report generation failed on phase $(cat .ci-temp/job_name),"
+#               echo "step $(cat .ci-temp/step_name)."
+#               echo "<br>Link: $JOBS_LINK"
+#             } > .ci-temp/message
+#           else
+#             echo "$MSG" > .ci-temp/message
+#           fi
 
-      - name: Set message
-        id: out
-        run: |
-          ./.ci/append-to-github-output.sh "message" "$(cat .ci-temp/message)"
+#       - name: Set message
+#         id: out
+#         run: |
+#           ./.ci/append-to-github-output.sh "message" "$(cat .ci-temp/message)"
 
-      - name: Comment PR
-        uses: checkstyle/contribution/comment-action@master
-        with:
-          message: ${{steps.out.outputs.message}}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#       - name: Comment PR
+#         uses: checkstyle/contribution/comment-action@master
+#         with:
+#           message: ${{steps.out.outputs.message}}
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Clean up cache
-        if: always()
-        run: |
-          echo "Cleaning up cache..."
-          # List of cache keys to remove
-          CACHE_KEYS=(
-            "${{ env.CACHE_KEY_PR }}"
-            "${{ env.CACHE_KEY_MASTER }}"
-            "${{ env.CACHE_KEY_CONTRIBUTION }}"
-            "${{ env.CACHE_KEY_CONFIG_FILES }}"
-            "${{ env.CACHE_KEY_GENERATED_CONFIGS }}"
-          )
+#       - name: Clean up cache
+#         if: always()
+#         run: |
+#           echo "Cleaning up cache..."
+#           # List of cache keys to remove
+#           CACHE_KEYS=(
+#             "${{ env.CACHE_KEY_PR }}"
+#             "${{ env.CACHE_KEY_MASTER }}"
+#             "${{ env.CACHE_KEY_CONTRIBUTION }}"
+#             "${{ env.CACHE_KEY_CONFIG_FILES }}"
+#             "${{ env.CACHE_KEY_GENERATED_CONFIGS }}"
+#           )
 
-          for key in "${CACHE_KEYS[@]}"; do
-            echo "Removing cache with key: $key"
-            curl --fail-with-body -X DELETE \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/repos/${{ github.repository }}/actions/caches?key=$key"
-          done
-          echo "Cache cleanup completed."
+#           for key in "${CACHE_KEYS[@]}"; do
+#             echo "Removing cache with key: $key"
+#             curl --fail-with-body -X DELETE \
+#               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+#               -H "Accept: application/vnd.github.v3+json" \
+#               "https://api.github.com/repos/${{ github.repository }}/actions/caches?key=$key"
+#           done
+#           echo "Cache cleanup completed."
