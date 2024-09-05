@@ -26,9 +26,12 @@ env:
   CACHE_KEY_GENERATED_CONFIGS: "generated-configs-${{ github.sha }}-${{ github.event.comment.id }}"
   GENERATED_CONFIGS_PATH: generated_configs
 
+
 on:
   issue_comment:
     types: [ created ]
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
@@ -215,47 +218,23 @@ jobs:
       config_link: ${{ steps.generated_config_bundle.outputs.config_link }}
       projects_link: ${{ steps.generated_config_bundle.outputs.projects_link }}
     steps:
-      - name: Checkout code
+      - name: Checkout PR
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Set branch
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REF: ${{ github.ref }}
-          GITHUB_SHA: ${{ github.sha }}
-          GITHUB_HEAD_REF: ${{ github.head_ref }}
-        id: set_branch
+      - name: Fetch base branch
         run: |
-          if [[ -n "${{ github.event.pull_request.url }}" ]]; then
-            echo "Pull request URL found, fetching details..."
-            mkdir -p .ci-temp
-            curl --fail-with-body -X GET "${{ github.event.pull_request.url }}" \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: token $GITHUB_TOKEN" \
-              -o .ci-temp/info.json
-            REF=$(jq --raw-output .head.ref .ci-temp/info.json)
-            COMMIT_SHA=$(jq --raw-output .head.sha .ci-temp/info.json)
-          else
-            echo "No pull request URL found, using fallback values..."
-            REF="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
-            COMMIT_SHA="${GITHUB_SHA}"
-          fi
-          
-          echo "ref=$REF" >> $GITHUB_OUTPUT
-          echo "commit_sha=${COMMIT_SHA:0:7}" >> $GITHUB_OUTPUT
-          echo "GITHUB_OUTPUT:"
-          cat "$GITHUB_OUTPUT"
+          git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
 
-      - name: Fetch all branches and checkout PR
+      - name: Get PR details
+        id: pr_details
         run: |
-          git fetch --all
-          git checkout -b pr-branch ${{ steps.set_branch.outputs.commit_sha }}
-          echo "Current branch:"
-          git branch --show-current
-          echo "PR Head SHA: ${{ steps.set_branch.outputs.commit_sha }}"
-          echo "PR Head Ref: ${{ steps.set_branch.outputs.ref }}"
+          echo "head_sha=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+          echo "base_sha=${{ github.event.pull_request.base.sha }}" >> $GITHUB_OUTPUT
+          echo "head_ref=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
+
 
       - name: Get new files
         id: new_files
