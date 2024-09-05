@@ -326,6 +326,11 @@ jobs:
           path: .
           key: "${{ env.CACHE_KEY_MASTER }}"
 
+      - name: Log Cache Contents
+        run: |
+          echo "Listing the contents of ${{ env.GENERATED_CONFIGS_PATH }}:"
+          ls -la ${{ env.GENERATED_CONFIGS_PATH }}
+    
       - name: Getting PR description
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
