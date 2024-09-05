@@ -298,8 +298,8 @@ jobs:
           ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
           
           # Print the contents of the files to the logs
-          # echo "Contents of diff_config.xml:"
-          # cat "$OUTPUT_DIR/$CONFIG_FILE_PATH"
+          echo "Contents of diff_config.xml:"
+          cat "$OUTPUT_DIR/$CONFIG_FILE_PATH"
 
       - name: Cache Generated Config and Project Files
         uses: actions/cache@v4
