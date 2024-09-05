@@ -220,10 +220,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fetch all branches
+      - name: Fetch all branches and checkout PR
         run: |
           git fetch --all
           git checkout -b pr-branch ${{ github.event.pull_request.head.sha }}
+          echo "Current branch:"
+          git branch --show-current
+          echo "PR Head SHA: ${{ github.event.pull_request.head.sha }}"
+          echo "PR Head Ref: ${{ github.event.pull_request.head.ref }}"
 
       - name: Get new files
         id: new_files
