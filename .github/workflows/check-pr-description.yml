@@ -15,35 +15,44 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout PR branch
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set branch
+        env:
+          PULL_REQUEST_URL: ${{ github.event.issue.pull_request.url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: set_branch
+        run: |
+          mkdir -p .ci-temp
+          curl --fail-with-body -X GET "${PULL_REQUEST_URL}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -o .ci-temp/info.json
+
+          jq --raw-output .head.ref .ci-temp/info.json > .ci-temp/branch
+          jq --raw-output .head.sha .ci-temp/info.json > .ci-temp/commit_sha
+
+          ./.ci/append-to-github-output.sh "ref" "$(cat .ci-temp/branch)"
+          ./.ci/append-to-github-output.sh "commit_sha" "$(cat .ci-temp/commit_sha | cut -c 1-7)"
+
+          echo "GITHUB_OUTPUT:"
+          echo "$(cat "$GITHUB_OUTPUT")"
+
+      - name: Display fetched branch and commit information
+        run: |
+          echo "Branch: $(cat .ci-temp/branch)"
+          echo "Commit SHA (short): $(cat .ci-temp/commit_sha | cut -c 1-7)"
+
+      - name: Checkout the PR branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }} # Checkout the PR branch
+          ref: $(cat .ci-temp/branch) # Checkout the PR branch from the JSON file
 
       - name: Display current branch
         run: |
           echo "You are now on branch: $(git rev-parse --abbrev-ref HEAD)"
           
-      - name: Fetch PR details
-        id: pr_details
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const pr = await github.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-            });
-            return { 
-              headRef: pr.data.head.ref, 
-              baseRef: pr.data.base.ref 
-            };
-      
-      - name: Log PR branch information
-        run: |
-          echo "Head Branch (Source): ${{ steps.pr_details.outputs.headRef }}"
-          echo "Base Branch (Target): ${{ steps.pr_details.outputs.baseRef }}"
-
       - name: Do action based on comment
         env:
           READ_ONLY_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
