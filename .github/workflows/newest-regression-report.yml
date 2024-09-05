@@ -409,27 +409,27 @@ jobs:
             exit 1
           fi
 
-      - name: Debug Environment
-        run: |
-          echo "Current working directory:"
-          pwd
-          echo "Contents of current directory:"
-          ls -la
-          echo "Contents of .ci directory:"
-          ls -la .ci
-          echo "GitHub workspace:"
-          echo ${{ github.workspace }}
-          echo "Path environment variable:"
-          echo $PATH
+      # - name: Debug Environment
+      #   run: |
+      #     echo "Current working directory:"
+      #     pwd
+      #     echo "Contents of current directory:"
+      #     ls -la
+      #     echo "Contents of .ci directory:"
+      #     ls -la .ci
+      #     echo "GitHub workspace:"
+      #     echo ${{ github.workspace }}
+      #     echo "Path environment variable:"
+      #     echo $PATH
       
-      - name: Check Script Existence
-        run: |
-          if [ -f ".ci/append-to-github-output.sh" ]; then
-            echo "Script exists"
-            cat .ci/append-to-github-output.sh
-          else
-            echo "Script does not exist"
-          fi
+      # - name: Check Script Existence
+      #   run: |
+      #     if [ -f ".ci/append-to-github-output.sh" ]; then
+      #       echo "Script exists"
+      #       cat .ci/append-to-github-output.sh
+      #     else
+      #       echo "Script does not exist"
+      #     fi
           
       - name: Set branch
         env:
