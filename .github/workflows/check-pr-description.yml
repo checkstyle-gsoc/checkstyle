@@ -44,11 +44,13 @@ jobs:
       - name: Verify branch name
         run: |
           echo "Branch to checkout: ${{ env.BRANCH_NAME }}"
+          git ls-remote --heads origin
           
       - name: Checkout the PR branch
         uses: actions/checkout@v4
         with:
           ref: ${{ env.BRANCH_NAME }} # Checkout the PR branch using the env variable
+          fetch-depth: 0              # Fetch the entire history
 
       - name: Display current branch
         run: |
