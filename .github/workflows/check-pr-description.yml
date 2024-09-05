@@ -41,6 +41,10 @@ jobs:
           echo "Branch: $(cat .ci-temp/branch)"
           echo "Commit SHA (short): $(cat .ci-temp/commit_sha | cut -c 1-7)"
 
+      - name: Verify branch name
+        run: |
+          echo "Branch to checkout: ${{ env.BRANCH_NAME }}"
+          
       - name: Checkout the PR branch
         uses: actions/checkout@v4
         with:
