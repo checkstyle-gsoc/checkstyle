@@ -306,19 +306,10 @@ jobs:
           OUTPUT_DIR="${{ env.GENERATED_CONFIGS_PATH }}"
           mkdir -p "$OUTPUT_DIR"
       
-          echo "Debugging Outputs:"
-          echo "FOUND_FILE: $FOUND_FILE"
-          echo "BASE_PATH: $BASE_PATH"
-          echo "OUTPUT_DIR: $OUTPUT_DIR"
-      
           # Generate a unique name for the config file
-          CONFIG_FILE_NAME=$(basename "${{ needs.parse_comment.outputs.input_file }}" .java)_config.xml
+          CONFIG_FILE_NAME=$(basename "$FOUND_FILE" .java)_config.xml
           CONFIG_FILE_PATH="$OUTPUT_DIR/$CONFIG_FILE_NAME"
           PROJECT_FILE_PATH="$OUTPUT_DIR/projects.properties"
-      
-          echo "CONFIG_FILE_NAME: $CONFIG_FILE_NAME"
-          echo "CONFIG_FILE_PATH: $CONFIG_FILE_PATH"
-          echo "PROJECT_FILE_PATH: $PROJECT_FILE_PATH"
       
           # Run the extractor
           java -jar extractor-all-${{env.EXTRACTOR_VERSION}}.jar \
@@ -326,19 +317,11 @@ jobs:
             --input-file "$FOUND_FILE" \
             "$CONFIG_FILE_PATH" \
             "$PROJECT_FILE_PATH"
-      
-          echo "After running extractor:"
-          echo "Config file created at: $CONFIG_FILE_PATH"
-          echo "Projects file created at: $PROJECT_FILE_PATH"
-      
+
           # Set the config and project file paths using the script
           ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
           ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
-          
-          # Rename the config file to diff_config.xml
-          mv "$CONFIG_FILE_PATH" "$OUTPUT_DIR/diff_config.xml"
-          echo "Renamed config file to: $OUTPUT_DIR/diff_config.xml"
-          
+
           # Print the contents of the files to the logs
           echo "Contents of diff_config.xml:"
           cat "$OUTPUT_DIR/diff_config.xml"
