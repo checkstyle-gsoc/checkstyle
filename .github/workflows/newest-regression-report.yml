@@ -230,31 +230,31 @@ jobs:
           # Fetch the PR details
           PR_DETAILS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER")
-          
+
           # Extract the head repo and ref
           HEAD_REPO=$(echo $PR_DETAILS | jq -r .head.repo.full_name)
           HEAD_REF=$(echo $PR_DETAILS | jq -r .head.ref)
-          
+
           echo "PR is from $HEAD_REPO branch $HEAD_REF"
-          
+
           # Fetch the file content
           FILE_CONTENT=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://raw.githubusercontent.com/$HEAD_REPO/$HEAD_REF/$INPUT_FILE")
-          
+
           if [ -z "$FILE_CONTENT" ]; then
             echo "Error: Could not fetch file content"
             exit 1
           fi
-          
+
           # Create the file locally with the correct structure
           TEMP_DIR=$(mktemp -d)
           TEMP_FILE="$TEMP_DIR/$INPUT_FILE"
           mkdir -p $(dirname "$TEMP_FILE")
           echo "$FILE_CONTENT" > "$TEMP_FILE"
-          
+
           echo "File contents:"
           cat "$TEMP_FILE"
-          
+
           # Use the .ci/append-to-github-output.sh script to append the found file path to the GitHub output
           ./.ci/append-to-github-output.sh "input_file" "$TEMP_FILE"
 
@@ -280,23 +280,19 @@ jobs:
           BASE_PATH=$(dirname "$FOUND_FILE")
           OUTPUT_DIR="${{ env.GENERATED_CONFIGS_PATH }}"
           mkdir -p "$OUTPUT_DIR"
-          
+
           # Generate a unique name for the config file
           CONFIG_FILE_NAME=$(basename "$FOUND_FILE" .java)_config.xml
           CONFIG_FILE_PATH="$OUTPUT_DIR/$CONFIG_FILE_NAME"
           PROJECT_FILE_PATH="$OUTPUT_DIR/projects.properties"
-          
+
           # Run the extractor
           java -jar extractor-all-${{env.EXTRACTOR_VERSION}}.jar \
             "$BASE_PATH" \
             --input-file "$FOUND_FILE" \
             "$CONFIG_FILE_PATH" \
             "$PROJECT_FILE_PATH"
-          
-          # Set the config and project file paths using the script
-          ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
-          ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
-          
+
           # Print the contents of the config file
           echo "Contents of $CONFIG_FILE_PATH:"
           if [ -f "$CONFIG_FILE_PATH" ]; then
@@ -306,6 +302,11 @@ jobs:
             echo "Searching for config file:"
             find . -name "*_config.xml"
           fi
+
+          # Set the config and project file paths using the script
+          ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
+          ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
+
 
       - name: Cache Generated Config and Project Files
         uses: actions/cache@v4
@@ -409,28 +410,6 @@ jobs:
             exit 1
           fi
 
-      # - name: Debug Environment
-      #   run: |
-      #     echo "Current working directory:"
-      #     pwd
-      #     echo "Contents of current directory:"
-      #     ls -la
-      #     echo "Contents of .ci directory:"
-      #     ls -la .ci
-      #     echo "GitHub workspace:"
-      #     echo ${{ github.workspace }}
-      #     echo "Path environment variable:"
-      #     echo $PATH
-      
-      # - name: Check Script Existence
-      #   run: |
-      #     if [ -f ".ci/append-to-github-output.sh" ]; then
-      #       echo "Script exists"
-      #       cat .ci/append-to-github-output.sh
-      #     else
-      #       echo "Script does not exist"
-      #     fi
-          
       - name: Set branch
         env:
           PULL_REQUEST_URL: ${{ github.event.issue.pull_request.url }}
@@ -490,11 +469,6 @@ jobs:
             .ci-temp/project.properties
           key: ${{ env.CACHE_KEY_CONFIG_FILES }}
 
-      - name: Debug directory structure
-        run: |
-          pwd
-          ls -R
-    
       - name: Set upstream
         run: |
           bash
