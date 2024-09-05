@@ -365,10 +365,11 @@ jobs:
     outputs:
       branch: ${{ steps.set_branch.outputs.ref }}
       commit_sha: ${{ steps.set_branch.outputs.commit_sha }}
-      report_label: ${{ 
-        needs.handle_configs_in_pr_description.outputs.report_label 
-        || needs.handle_generated_config_bundle.outputs.report_label 
-      }}
+      report_label: >-
+        ${{ 
+          needs.handle_configs_in_pr_description.outputs.report_label || 
+          needs.handle_generated_config_bundle.outputs.report_label 
+        }}
     steps:
       - name: Restore Master Checkstyle Checkout
         uses: actions/cache@v4
