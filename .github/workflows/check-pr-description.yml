@@ -1,15 +1,16 @@
-name: "Check PR Description"
+name: "Check PR Description on Comment"
 
 on:
-  pull_request:
-    branches: [ master ]
+  issue_comment:
+    types: [created]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   analyze:
+    if: github.event.issue.pull_request != null && contains(github.event.comment.body, 'trigger action')
     name: Analyze
     runs-on: ubuntu-22.04
 
@@ -17,9 +18,35 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Do action
+      - name: Log comment and PR information
+        run: |
+          echo "Comment body: ${{ github.event.comment.body }}"
+          echo "PR Number: ${{ github.event.issue.number }}"
+
+      - name: Fetch PR details
+        id: pr_details
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const pr = await github.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            return { 
+              headRef: pr.data.head.ref, 
+              baseRef: pr.data.base.ref 
+            };
+      
+      - name: Log PR branch information
+        run: |
+          echo "Head Branch (Source): ${{ steps.pr_details.outputs.headRef }}"
+          echo "Base Branch (Target): ${{ steps.pr_details.outputs.baseRef }}"
+
+      - name: Do action based on comment
         env:
           READ_ONLY_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-          PULL_REQUEST: '${{ github.event.number }}'
+          PULL_REQUEST: '${{ github.event.issue.number }}'
         run: |
+          echo "Triggering action based on PR comment"
           ./.ci/pr-description.sh
