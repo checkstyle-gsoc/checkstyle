@@ -107,6 +107,23 @@ jobs:
           repository: ${{ github.repository }}
           path: .ci-temp/checkstyle
           fetch-depth: 0
+          
+      - name: Checkout fork's master branch (for scripts)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.get_pr_details.outputs.fork_repo }}
+          ref: master
+          path: .ci
+          fetch-depth: 0
+
+      - name: Make scripts executable
+        run: chmod +x .ci/*.sh
+
+      - name: Verify Latest Commit
+        run: git log -1
+
+      - name: List .ci Directory After Checkout
+        run: ls -la .ci
 
       - name: Verify Latest Commit
         run: git log -1
