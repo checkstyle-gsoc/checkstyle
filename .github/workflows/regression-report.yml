@@ -248,7 +248,7 @@ jobs:
       - name: Download Extractor JAR
         uses: robinraju/release-downloader@v1.8
         with:
-          repository: "checkstyle/test-configs"
+          repository: "relentless-pursuit/test-configs"
           tag: "extractor-${{ env.EXTRACTOR_VERSION }}"
           fileName: "extractor-all-${{ env.EXTRACTOR_VERSION }}.jar"
 
@@ -459,7 +459,7 @@ jobs:
       - name: Download DiffTool JAR
         uses: robinraju/release-downloader@v1.8
         with:
-          repository: "checkstyle/test-configs"
+          repository: "relentless-pursuit/test-configs"
           tag: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}"
           fileName: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
           out-file-path: ".ci-temp"
