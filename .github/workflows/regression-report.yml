@@ -347,7 +347,7 @@ jobs:
       - name: Parsing content of PR description
         id: parse_description
         run: |
-          ./.ci/diff-report-new.sh parse-pr-description-text
+          ./.ci/diff-report.sh parse-pr-description-text
 
   download_configs:
     needs: [
@@ -425,7 +425,7 @@ jobs:
           mkdir -p .ci-temp
           ls -la .ci
           git log -1
-          if ! ./.ci/diff-report-new.sh download-files; then
+          if ! ./.ci/diff-report.sh download-files; then
             ./.ci/append-to-github-output.sh "failed" "true"
             exit 1
           fi
