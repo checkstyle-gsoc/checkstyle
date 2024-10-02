@@ -105,7 +105,7 @@ jobs:
       - name: Checkout master branch
         uses: actions/checkout@v4
         with:
-          repository: checkstyle/checkstyle
+          repository: ${{ github.repository }}
           path: .ci-temp/checkstyle
 
       - name: Setup Git remotes
