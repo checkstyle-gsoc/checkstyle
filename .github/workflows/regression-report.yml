@@ -22,7 +22,7 @@ env:
   EXTRACTOR_VERSION: 2024-08-27
   DIFF_TOOL_VERSION: "1.0-SNAPSHOT-all"
   PATCH_DIFF_TOOL_VERSION: "0.1-SNAPSHOT"
-  CACHE_KEY: "regression-report-${{ github.event.comment.id }}"
+  CACHE_KEY: "regression-report-${{ github.sha }}-${{ github.event.comment.id }}"
   GENERATED_CONFIGS_PATH: generated_configs
 
 on:
@@ -104,23 +104,8 @@ jobs:
       - name: Checkout master branch
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository }}
+          repository: checkstyle/checkstyle
           path: .ci-temp/checkstyle
-          fetch-depth: 0
-          
-      - name: Checkout fork's master branch (for scripts)
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ steps.get_pr_details.outputs.fork_repo }}
-          ref: master
-          path: .ci
-          fetch-depth: 0
-
-      - name: Verify Latest Commit
-        run: git log -1
-
-      - name: List .ci Directory After Checkout
-        run: ls -la .ci
 
       - name: Setup Git remotes
         run: |
@@ -306,8 +291,6 @@ jobs:
           echo "Contents of CONFIG_FILE_PATH:"
           cat "$CONFIG_FILE_PATH"
 
-          echo "Contents of PROJECT_FILE_PATH:"
-          cat "$PROJECT_FILE_PATH"
 
       - name: Cache Generated Config and Project Files
         uses: actions/cache@v4
@@ -379,13 +362,11 @@ jobs:
           || ''
         }}
     steps:
-      - name: Restore cache
-        uses: actions/cache/restore@v4
+      - name: Checkout master branch
+        uses: actions/checkout@v4
         with:
-          path: |
-            .
-          key: ${{ env.CACHE_KEY }}
-          fail-on-cache-miss: true
+          repository: checkstyle/checkstyle
+          path: .ci-temp
 
       - name: Restore Generated Config and Project Files
         if: needs.handle_generated_config_bundle.result == 'success'
@@ -648,9 +629,9 @@ jobs:
       make_report ]
     if: always()
       && (needs.make_report.result == 'failure'
-      || needs.make_report.outputs.message != ''
-      || needs.download_configs.result == 'failure'
-      || needs.handle_generated_config_bundle.result == 'failure')
+          || needs.make_report.outputs.message != ''
+          || needs.download_configs.result == 'failure'
+          || needs.handle_generated_config_bundle.result == 'failure')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -664,7 +645,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p .ci-temp
-          JOBS_LINK="https://github.com/checkstyle/checkstyle/actions/runs/${{ github.run_id }}"
+          JOBS_LINK="https://github.com/checkstyle/checkstyle/actions/runs/${{github.run_id}}"
           if [ "$DOWNLOAD_RESULT" == "failure" ]; then
             {
               echo "Failed to download or process the specified configuration(s)."
@@ -689,7 +670,7 @@ jobs:
               echo "<br>Link: $JOBS_LINK"
             } > .ci-temp/message
           elif [ -z "$MSG" ]; then
-            API_LINK="https://api.github.com/repos/checkstyle/checkstyle/actions/runs/${{ github.run_id }}/jobs"
+            API_LINK="https://api.github.com/repos/checkstyle/checkstyle/actions/runs/${{github.run_id}}/jobs"
             curl --fail-with-body -X GET "${API_LINK}" \
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: token $GITHUB_TOKEN" \
