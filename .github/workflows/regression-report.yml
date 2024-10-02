@@ -365,7 +365,7 @@ jobs:
       - name: Checkout master branch
         uses: actions/checkout@v4
         with:
-          repository: checkstyle/checkstyle
+          repository: checkstyle-gsoc/checkstyle
           path: .
 
       - name: Restore Generated Config and Project Files
