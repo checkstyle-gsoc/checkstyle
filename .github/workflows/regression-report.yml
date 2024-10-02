@@ -116,15 +116,6 @@ jobs:
           path: .ci
           fetch-depth: 0
 
-      - name: Make scripts executable
-        run: chmod +x .ci/*.sh
-
-      - name: Verify Latest Commit
-        run: git log -1
-
-      - name: List .ci Directory After Checkout
-        run: ls -la .ci
-
       - name: Verify Latest Commit
         run: git log -1
 
