@@ -330,6 +330,7 @@ jobs:
           PULL_REQUEST_URL: ${{ github.event.issue.pull_request.url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          git log -1
           mkdir -p .ci-temp
           # convert windows line endings to unix in event text
           echo "$ISSUE_BODY" > .ci-temp/windows.txt
