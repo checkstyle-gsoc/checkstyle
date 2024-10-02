@@ -101,12 +101,14 @@ jobs:
         with:
           repository: ${{ steps.get_pr_details.outputs.fork_repo }}
           ref: ${{ steps.get_pr_details.outputs.branch }}
+          fetch-depth: 0
 
       - name: Checkout master branch
         uses: actions/checkout@v4
         with:
           repository: ${{ github.repository }}
           path: .ci-temp/checkstyle
+          fetch-depth: 0
 
       - name: Verify Latest Commit
         run: git log -1
