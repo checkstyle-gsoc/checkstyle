@@ -362,12 +362,11 @@ jobs:
           || ''
         }}
     steps:
-      - name: Checkout Main Repository
+      - name: Checkout master branch
         uses: actions/checkout@v4
         with:
-          # Defaults to the current repository, no need to specify 'repository' parameter
-          path: main-repo
-          fetch-depth: 0  # 
+          repository: checkstyle/checkstyle
+          path: .
 
       - name: Restore Generated Config and Project Files
         if: needs.handle_generated_config_bundle.result == 'success'
