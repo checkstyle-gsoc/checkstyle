@@ -39,18 +39,16 @@ download-files)
   mkdir -p .ci-temp
   echo "Downloading files..."
 
-  # check for projects link from PR, if not found use default from contribution repo
+  # Check for projects link from PR, if not found use default from contribution repo
   LINK="${DIFF_PROJECTS_LINK:-$DEFAULT_PROJECTS_LINK}"
 
-  # Determine the extension of the projects file
+  # Get projects file using the original filename
   PROJECTS_FILENAME=$(basename "$LINK")
-  EXTENSION="${PROJECTS_FILENAME##*.}"
-  
-  # get projects file
+
   curl --fail-with-body -X GET "${LINK}" \
     -H "Accept: application/vnd.github+json" \
     -H "Authorization: token $GITHUB_TOKEN" \
-    -o ".ci-temp/projects.${EXTENSION}"
+    -o ".ci-temp/${PROJECTS_FILENAME}"
 
   if [ -n "$NEW_MODULE_CONFIG_LINK" ]; then
     curl --fail-with-body -X GET "${NEW_MODULE_CONFIG_LINK}" \
