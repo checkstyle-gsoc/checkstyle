@@ -46,6 +46,8 @@ download-files)
   PROJECTS_FILENAME=$(basename "$LINK")
   EXTENSION="${PROJECTS_FILENAME##*.}"
 
+  echo "PROJECTS_FILENAME: $PROJECTS_FILENAME"
+
   # get projects file
   curl --fail-with-body -X GET "${LINK}" \
     -H "Accept: application/vnd.github+json" \
