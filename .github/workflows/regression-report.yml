@@ -482,6 +482,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: List .ci-temp directory
+        run: ls -la .ci-temp
+
       - name: Print config.xml
         run: |
           echo "Contents of config.xml:"
@@ -626,9 +629,9 @@ jobs:
       make_report ]
     if: always()
       && (needs.make_report.result == 'failure'
-          || needs.make_report.outputs.message != ''
-          || needs.download_configs.result == 'failure'
-          || needs.handle_generated_config_bundle.result == 'failure')
+      || needs.make_report.outputs.message != ''
+      || needs.download_configs.result == 'failure'
+      || needs.handle_generated_config_bundle.result == 'failure')
     steps:
       - name: Restore cache
         uses: actions/cache/restore@v4
