@@ -292,7 +292,6 @@ jobs:
           echo "Contents of CONFIG_FILE_PATH:"
           cat "$CONFIG_FILE_PATH"
 
-
       - name: Cache Generated Config and Project Files
         uses: actions/cache@v4
         with:
@@ -331,7 +330,6 @@ jobs:
           PULL_REQUEST_URL: ${{ github.event.issue.pull_request.url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git log -1
           mkdir -p .ci-temp
           # convert windows line endings to unix in event text
           echo "$ISSUE_BODY" > .ci-temp/windows.txt
@@ -412,14 +410,11 @@ jobs:
             }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git log -1
+          mkdir -p .ci-temp
           if ! ./.ci/diff-report.sh download-files; then
             ./.ci/append-to-github-output.sh "failed" "true"
             exit 1
           fi
-
-      - name: List .ci-temp directory
-        run: ls -la .ci-temp
 
       - name: Cache config files
         uses: actions/cache@v4
@@ -562,7 +557,8 @@ jobs:
 
           # Paths to the JAR files
           DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
-          PATCH_DIFF_TOOL_JAR="patch-diff-report-tool-${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar"
+          PATCH_DIFF_TOOL_JAR="patch-diff-report-tool-\
+          ${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar"
 
           # Run DiffTool with appropriate arguments
           if [ -f "$NEW_MODULE_CONFIG" ]; then
