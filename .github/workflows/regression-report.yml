@@ -369,12 +369,10 @@ jobs:
           || ''
         }}
     steps:
-      - name: Restore cache
-        uses: actions/cache/restore@v4
+      - name: Checkout master branch
+        uses: actions/checkout@v4
         with:
           path: .
-          key: ${{ env.CACHE_KEY }}
-          fail-on-cache-miss: true
 
       - name: Restore Generated Config and Project Files
         if: needs.handle_generated_config_bundle.result == 'success'
