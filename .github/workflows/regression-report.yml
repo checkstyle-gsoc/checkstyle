@@ -423,13 +423,6 @@ jobs:
             exit 1
           fi
 
-      - name: List downloaded files
-        run: |
-          echo "Listing files in .ci-temp directory:"
-          ls -la .ci-temp
-          echo "Listing project files (.yml or .properties) in .ci-temp:"
-          ls -la .ci-temp/projects.yml .ci-temp/projects.properties || echo "No project files found."
-
       - name: Cache config files
         uses: actions/cache@v4
         with:
