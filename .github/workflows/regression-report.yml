@@ -13,13 +13,13 @@
 #####################################################################################
 name: regression-report
 env:
-  AWS_REGION: us-east-2
-  AWS_BUCKET_NAME: "checkstyle-diff-reports"
+  AWS_REGION: ap-south-1
+  AWS_BUCKET_NAME: "chesktyler-reports"
   USER_LOGIN: ${{ github.event.issue.user.login }}
   # yamllint disable-line rule:line-length
   DEFAULT_PROJECTS_LINK: "https://raw.githubusercontent.com/checkstyle/test-configs/main/extractor/src/main/resources/list-of-projects.yml"
   BASE_TEST_CONFIGS_URL: "https://raw.githubusercontent.com/checkstyle/test-configs/main"
-  EXTRACTOR_VERSION: 2024-08-27
+  EXTRACTOR_VERSION: 2024-10-08
   DIFF_TOOL_VERSION: "1.0-SNAPSHOT-all"
   PATCH_DIFF_TOOL_VERSION: "0.1-SNAPSHOT"
   CACHE_KEY: "regression-report-${{ github.sha }}-${{ github.event.comment.id }}"
@@ -338,7 +338,7 @@ jobs:
       - name: Parsing content of PR description
         id: parse_description
         run: |
-          ./.ci/diff-report.sh parse-pr-description-text
+          ./.ci/regression-report.sh parse-pr-description-text
 
   download_configs:
     needs: [
@@ -386,7 +386,12 @@ jobs:
           echo "Config link: $DIFF_CONFIG_LINK"
           echo "Projects link: $DIFF_PROJECTS_LINK"
           cp "$DIFF_CONFIG_LINK" .ci-temp/diff_config.xml
-          cp "$DIFF_PROJECTS_LINK" .ci-temp/projects.yml
+          # Determine the projects file extension
+          if [[ "$DIFF_PROJECTS_LINK" == *.properties ]]; then
+            cp "$DIFF_PROJECTS_LINK" .ci-temp/projects.properties
+          else
+            cp "$DIFF_PROJECTS_LINK" .ci-temp/projects.yml
+          fi
 
       - name: Download URL-based Config and Project File
         id: download_files
@@ -413,7 +418,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p .ci-temp
-          if ! ./.ci/diff-report.sh download-files; then
+          if ! ./.ci/regression-report.sh download-files; then
             ./.ci/append-to-github-output.sh "failed" "true"
             exit 1
           fi
@@ -459,7 +464,7 @@ jobs:
       - name: Download DiffTool JAR
         uses: robinraju/release-downloader@v1.8
         with:
-          repository: "relentless-pursuit/test-configs"
+          repository: "checkstyle/test-configs"
           tag: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}"
           fileName: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
           out-file-path: ".ci-temp"
