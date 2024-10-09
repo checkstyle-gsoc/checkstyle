@@ -423,6 +423,15 @@ jobs:
             exit 1
           fi
 
+      - name: List downloaded files
+        run: |
+          echo "Listing all files in the current directory:"
+          ls -la
+          echo "Listing files in .ci-temp directory:"
+          ls -la .ci-temp
+          echo "Listing files in other relevant directories:"
+          ls -la path/to/other/directories
+      
       - name: Cache config files
         uses: actions/cache@v4
         with:
