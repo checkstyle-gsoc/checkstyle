@@ -201,13 +201,6 @@ jobs:
           CONFIG_BUNDLE="${{ needs.parse_comment.outputs.config_bundle }}"
           CONFIG_LINK="$BASE_URL/$CONFIG_BUNDLE/config.xml"
           PROJECTS_LINK="$BASE_URL/$CONFIG_BUNDLE/list-of-projects.yml"
-          # Log the constructed URLs for verification
-          echo "----- Setting Config and Projects Links -----"
-          echo "Base URL: $BASE_URL"
-          echo "Config Bundle: $CONFIG_BUNDLE"
-          echo "Config Link: $CONFIG_LINK"
-          echo "Projects Link: $PROJECTS_LINK"
-          echo "------------------------------------
           ./.ci/append-to-github-output.sh "config_link" "$CONFIG_LINK"
           ./.ci/append-to-github-output.sh "projects_link" "$PROJECTS_LINK"
 
