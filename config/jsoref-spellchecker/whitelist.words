@@ -16,7 +16,6 @@ acm
 Aconfig
 actionlint
 addons
-adf
 admins
 adr
 AFilter
@@ -90,7 +89,7 @@ awt
 azurewebsites
 backport
 Backquote
-Backticks
+backticks
 BADN
 badpackage
 baeldung
@@ -298,6 +297,7 @@ detailnodetreestringprinter
 devops
 Dexec
 Dexpression
+df
 dfa
 DFFF
 Dfile
@@ -347,6 +347,7 @@ Duser
 Dversion
 Dxml
 eb
+EBNF
 ecj
 eclemma
 eclipsecommunityawards
@@ -404,6 +405,7 @@ Fannotation
 favicon
 Fblocks
 FCBL
+fcc
 FCCD
 Fchecks
 Fcheckstyle
@@ -516,6 +518,8 @@ groovyism
 groupcdg
 groupon
 grp
+GSo
+gsoc
 Gsp
 GString
 Gtk
@@ -679,6 +683,7 @@ jdt
 jedit
 jenkins
 jep
+jessesquires
 jetbrains
 JFile
 JFrame
@@ -734,6 +739,7 @@ junitpioneer
 jvm
 jxr
 kailasam
+Kansara
 kazgroup
 kbd
 kclee
@@ -830,6 +836,7 @@ mixin
 mkdir
 mkordas
 MLINKCHECK
+moby
 mockit
 mockito
 modifiedcontrolvariable
@@ -855,6 +862,7 @@ mutableexception
 mutationtest
 MVC
 mvn
+mvnrepository
 mvnw
 Mycheckstyle
 mycompany
@@ -956,6 +964,7 @@ OAuth
 objblock
 oburn
 OCP
+octocat
 ogg
 OI
 olddomain
@@ -1125,6 +1134,7 @@ regexpsinglelinejava
 relativized
 releasenotes
 remkop
+reportyml
 requireemptylinebeforeblocktaggroup
 requirethis
 resourceleak
@@ -1266,6 +1276,7 @@ sudo
 suitebuilder
 sukhodolsky
 summaryjavadoc
+summerofcode
 superclasses
 superclone
 superfinalize
@@ -1317,6 +1328,7 @@ throwable
 throwscount
 Thymeleaf
 tidelift
+timeline
 TKN
 Tls
 tmp
@@ -1443,6 +1455,7 @@ wiki
 wikipedia
 wiktionary
 windowsservercore
+withgoogle
 wnd
 WOC
 woff

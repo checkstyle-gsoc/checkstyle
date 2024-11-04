@@ -19,6 +19,8 @@
 
 package com.puppycrawl.tools.checkstyle.checks.coding;
 
+import java.util.Set;
+
 import com.puppycrawl.tools.checkstyle.StatelessCheck;
 import com.puppycrawl.tools.checkstyle.api.AbstractCheck;
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
@@ -26,9 +28,10 @@ import com.puppycrawl.tools.checkstyle.api.TokenTypes;
 import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
 
 /**
- * <p>
+ * <div>
  * Checks that switch statement has a {@code default} clause.
- * </p>
+ * </div>
+ *
  * <p>
  * Rationale: It's usually a good idea to introduce a
  * default case in every switch statement. Even if
@@ -38,29 +41,35 @@ import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
  * the code is protected against later changes, e.g.
  * introduction of new types in an enumeration type.
  * </p>
+ *
  * <p>
  * This check does not validate any switch expressions. Rationale:
  * The compiler requires switch expressions to be exhaustive. This means
  * that all possible inputs must be covered.
  * </p>
+ *
  * <p>
  * This check does not validate switch statements that use pattern or null
  * labels. Rationale: Switch statements that use pattern or null labels are
  * checked by the compiler for exhaustiveness. This means that all possible
  * inputs must be covered.
  * </p>
+ *
  * <p>
  * See the <a href="https://docs.oracle.com/javase/specs/jls/se22/html/jls-15.html#jls-15.28">
  *     Java Language Specification</a> for more information about switch statements
  *     and expressions.
  * </p>
+ *
  * <p>
  * See the <a href="https://docs.oracle.com/javase/specs/jls/se22/html/jls-14.html#jls-14.30">
  *     Java Language Specification</a> for more information about patterns.
  * </p>
+ *
  * <p>
  * Parent is {@code com.puppycrawl.tools.checkstyle.TreeWalker}
  * </p>
+ *
  * <p>
  * Violation Message Keys:
  * </p>
@@ -80,6 +89,19 @@ public class MissingSwitchDefaultCheck extends AbstractCheck {
      * file.
      */
     public static final String MSG_KEY = "missing.switch.default";
+
+    /**
+     * Represents the possible parent tokens of a switch statement.
+     */
+    private static final Set<Integer> SWITCH_STATEMENT_PARENTS = Set.of(
+            TokenTypes.SLIST,
+            TokenTypes.LITERAL_IF,
+            TokenTypes.LITERAL_ELSE,
+            TokenTypes.LITERAL_DO,
+            TokenTypes.LITERAL_WHILE,
+            TokenTypes.LITERAL_FOR,
+            TokenTypes.LABELED_STAT
+    );
 
     @Override
     public int[] getDefaultTokens() {
@@ -169,17 +191,7 @@ public class MissingSwitchDefaultCheck extends AbstractCheck {
      * @return true if part of a switch expression
      */
     private static boolean isSwitchExpression(DetailAST ast) {
-        final int[] switchStatementParents = {
-            TokenTypes.SLIST,
-            TokenTypes.LITERAL_IF,
-            TokenTypes.LITERAL_ELSE,
-            TokenTypes.LITERAL_DO,
-            TokenTypes.LITERAL_WHILE,
-            TokenTypes.LITERAL_FOR,
-            TokenTypes.LABELED_STAT,
-        };
-
-        return !TokenUtil.isOfType(ast.getParent(), switchStatementParents);
+        return !TokenUtil.isOfType(ast.getParent().getType(), SWITCH_STATEMENT_PARENTS);
     }
 
     /**

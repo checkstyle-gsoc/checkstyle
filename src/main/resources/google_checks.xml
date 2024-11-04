@@ -13,7 +13,7 @@
     To completely disable a check, just comment it out or delete it from the file.
     To suppress certain violations please review suppression filters.
 
-    Authors: Max Vetrenko, Ruslan Diachenko, Roman Ivanov.
+    Authors: Max Vetrenko, Mauryan Kansara, Ruslan Diachenko, Roman Ivanov.
  -->
 
 <module name="Checker">
@@ -83,17 +83,24 @@
                value="LITERAL_DO, LITERAL_ELSE, LITERAL_FOR, LITERAL_IF, LITERAL_WHILE"/>
     </module>
     <module name="LeftCurly">
+      <property name="id" value="LeftCurlyEol"/>
       <property name="tokens"
-               value="ANNOTATION_DEF, CLASS_DEF, CTOR_DEF, ENUM_CONSTANT_DEF, ENUM_DEF,
-                    INTERFACE_DEF, LAMBDA, LITERAL_CASE, LITERAL_CATCH, LITERAL_DEFAULT,
+                value="ANNOTATION_DEF, CLASS_DEF, CTOR_DEF, ENUM_CONSTANT_DEF, ENUM_DEF,
+                    INTERFACE_DEF, LAMBDA, LITERAL_CATCH,
                     LITERAL_DO, LITERAL_ELSE, LITERAL_FINALLY, LITERAL_FOR, LITERAL_IF,
                     LITERAL_SWITCH, LITERAL_SYNCHRONIZED, LITERAL_TRY, LITERAL_WHILE, METHOD_DEF,
                     OBJBLOCK, STATIC_INIT, RECORD_DEF, COMPACT_CTOR_DEF"/>
     </module>
+    <module name="LeftCurly">
+      <property name="id" value="LeftCurlyNl"/>
+      <property name="option" value="nl"/>
+      <property name="tokens"
+                value="LITERAL_CASE, LITERAL_DEFAULT"/>
+    </module>
     <module name="RightCurly">
       <property name="id" value="RightCurlySame"/>
       <property name="tokens"
-               value="LITERAL_TRY, LITERAL_CATCH, LITERAL_FINALLY, LITERAL_IF, LITERAL_ELSE,
+               value="LITERAL_TRY, LITERAL_CATCH, LITERAL_IF, LITERAL_ELSE,
                     LITERAL_DO"/>
     </module>
     <module name="RightCurly">
@@ -102,7 +109,7 @@
       <property name="tokens"
                value="CLASS_DEF, METHOD_DEF, CTOR_DEF, LITERAL_FOR, LITERAL_WHILE, STATIC_INIT,
                     INSTANCE_INIT, ANNOTATION_DEF, ENUM_DEF, INTERFACE_DEF, RECORD_DEF,
-                    COMPACT_CTOR_DEF, LITERAL_SWITCH, LITERAL_CASE"/>
+                    COMPACT_CTOR_DEF, LITERAL_SWITCH, LITERAL_CASE, LITERAL_FINALLY"/>
     </module>
     <module name="SuppressionXpathSingleFilter">
       <!-- suppression is required till https://github.com/checkstyle/checkstyle/issues/7541 -->
@@ -123,6 +130,7 @@
       <property name="allowEmptyMethods" value="true"/>
       <property name="allowEmptyTypes" value="true"/>
       <property name="allowEmptyLoops" value="true"/>
+      <property name="allowEmptySwitchBlockStatements" value="true"/>
       <property name="ignoreEnhancedForColon" value="false"/>
       <property name="tokens"
                value="ASSIGN, BAND, BAND_ASSIGN, BOR, BOR_ASSIGN, BSR, BSR_ASSIGN, BXOR,
@@ -277,6 +285,13 @@
       <property name="throwsIndent" value="4"/>
       <property name="lineWrappingIndentation" value="4"/>
       <property name="arrayInitIndent" value="2"/>
+    </module>
+    <!-- Suppression for block code until we find a way to detect them properly
+         until https://github.com/checkstyle/checkstyle/issues/15769 -->
+    <module name="SuppressionXpathSingleFilter">
+      <property name="checks" value="Indentation"/>
+      <property name="query" value="//SLIST[not(parent::CASE_GROUP)]/SLIST
+                                   | //SLIST[not(parent::CASE_GROUP)]/SLIST/RCURLY"/>
     </module>
     <module name="AbbreviationAsWordInName">
       <property name="ignoreFinal" value="false"/>

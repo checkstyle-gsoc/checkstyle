@@ -30,9 +30,10 @@ import com.puppycrawl.tools.checkstyle.api.TokenTypes;
 import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
 
 /**
- * <p>
+ * <div>
  * Ensures that catch parameters that are not used are declared as an unnamed variable.
- * </p>
+ * </div>
+ *
  * <p>
  * Rationale:
  * </p>
@@ -44,18 +45,22 @@ import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
  *         Follows Java conventions for denoting unused parameters with an underscore ({@code _}).
  *     </li>
  * </ul>
+ *
  * <p>
  * See the <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/unnamed-jls.html">
  * Java Language Specification</a> for more information about unnamed variables.
  * </p>
+ *
  * <p>
  * <b>Attention</b>: This check should be activated only on source code
  * that is compiled by jdk21 or higher;
  * unnamed catch parameters came out as the first preview in Java 21.
  * </p>
+ *
  * <p>
  * Parent is {@code com.puppycrawl.tools.checkstyle.TreeWalker}
  * </p>
+ *
  * <p>
  * Violation Message Keys:
  * </p>
@@ -157,15 +162,9 @@ public class UnusedCatchParameterShouldBeUnnamedCheck extends AbstractCheck {
      */
     private static boolean isCatchParameterIdentifierCandidate(DetailAST identifierAst) {
         // we should ignore the ident if it is in the exception declaration
-        final boolean isCatchParameterDeclaration =
-                identifierAst.getParent().getParent().getType() == TokenTypes.LITERAL_CATCH;
-
-        final boolean hasValidParentToken =
-                !TokenUtil.isOfType(identifierAst.getParent(), INVALID_CATCH_PARAM_IDENT_PARENTS);
-
-        final boolean isMethodInvocation = isMethodInvocation(identifierAst);
-
-        return !isCatchParameterDeclaration && (hasValidParentToken || isMethodInvocation);
+        return identifierAst.getParent().getParent().getType() != TokenTypes.LITERAL_CATCH
+            && (!TokenUtil.isOfType(identifierAst.getParent(), INVALID_CATCH_PARAM_IDENT_PARENTS)
+                 || isMethodInvocation(identifierAst));
     }
 
     /**

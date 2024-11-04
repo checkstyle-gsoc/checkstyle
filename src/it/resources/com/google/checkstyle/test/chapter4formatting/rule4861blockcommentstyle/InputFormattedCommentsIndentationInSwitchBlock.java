@@ -29,7 +29,7 @@ public class InputFormattedCommentsIndentationInSwitchBlock {
         break;
       case "6":
         int k = 7;
-        // fall through
+      // fall through
       case "7":
         if (true) {
           /* foo */
@@ -40,27 +40,23 @@ public class InputFormattedCommentsIndentationInSwitchBlock {
         break;
       case "9":
         foo1();
-        // fall through
+      // fall through
       case "10":
-        // violation below ''{' at column 9 should be on the previous line.'
         {
           if (true) {
             /* foo */
           }
         }
-        // fall through
+      // fall through
       case "11":
-        // violation below ''{' at column 9 should be on the previous line.'
         {
         }
-        // fall through
+      // fall through
       case "28":
-        // violation below ''{' at column 9 should be on the previous line.'
         {
         }
-        // fall through
+      // fall through
       case "12":
-        // violation below ''{' at column 9 should be on the previous line.'
         {
           // odd indentation comment
 
@@ -68,33 +64,28 @@ public class InputFormattedCommentsIndentationInSwitchBlock {
         }
         break;
       case "13":
-        // violation below ''{' at column 9 should be on the previous line.'
         {
           // some comment in empty case block
         }
         break;
       case "14":
-        // violation below ''{' at column 9 should be on the previous line.'
         {
           // odd indentation comment
 
         }
         break;
       case "15":
-        // violation below ''{' at column 9 should be on the previous line.'
         {
           foo1();
           // odd indentation comment
         }
         break;
       case "16":
-        // violation below ''{' at column 9 should be on the previous line.'
         {
           int a;
         }
-        // fall through
+      // fall through
       case "17":
-        // violation below ''{' at column 9 should be on the previous line.'
         {
           int a;
         }
@@ -102,15 +93,14 @@ public class InputFormattedCommentsIndentationInSwitchBlock {
         // odd indentation comment
         break;
       case "18":
-        // violation below ''{' at column 9 should be on the previous line.'
         {
           System.lineSeparator();
         } // trailing comment
         break;
       case "19":
-        // comment
+      // comment
       case "20":
-        // comment
+      // comment
       case "21":
       default:
         // comment
@@ -159,10 +149,9 @@ public class InputFormattedCommentsIndentationInSwitchBlock {
         i--;
         break;
       case 3:
-        // violation below ''{' at column 9 should be on the previous line.'
         {
         }
-        // fall through
+      // fall through
       default:
     }
 
@@ -238,11 +227,10 @@ public class InputFormattedCommentsIndentationInSwitchBlock {
   public void foo7() {
     int a = 2;
     String s = "";
-    // violation 4 lines below '.* indentation should be the same level as line 246.'
     switch (a) {
-        // comment
-        // comment
-        // comment
+      // comment
+      // comment
+      // comment
       case 1:
       case 2:
         // comment
@@ -251,12 +239,12 @@ public class InputFormattedCommentsIndentationInSwitchBlock {
         // comment
         break;
       case 3:
-        // comment
-        // comment
-        // comment
+      // comment
+      // comment
+      // comment
 
       case 4:
-        // odd indentation comment
+      // odd indentation comment
       case 5:
         s.toString().toString().toString();
         // odd indentation comment
@@ -271,11 +259,10 @@ public class InputFormattedCommentsIndentationInSwitchBlock {
   public void foo8() {
     int a = 2;
     String s = "";
-    // violation 4 lines below '.* indentation should be the same level as line 279.'
     switch (a) {
-        // comment
-        // comment
-        // comment
+      // comment
+      // comment
+      // comment
       case 1:
       case 2:
         // comment
@@ -291,7 +278,7 @@ public class InputFormattedCommentsIndentationInSwitchBlock {
 
         break;
       case 4:
-        // odd indentation comment
+      // odd indentation comment
       default:
     }
   }
@@ -302,7 +289,7 @@ public class InputFormattedCommentsIndentationInSwitchBlock {
     switch (a) {
       case 1:
       case 2:
-        // comment
+      // comment
       default:
     }
   }
@@ -323,7 +310,7 @@ public class InputFormattedCommentsIndentationInSwitchBlock {
     switch (a) {
       case 1:
       case 2:
-        // comment
+      // comment
       default:
     }
   }
@@ -331,9 +318,8 @@ public class InputFormattedCommentsIndentationInSwitchBlock {
   /** some javadoc. */
   public void foo12() {
     int a = 5;
-    // violation 2 lines below '.* indentation should be the same level as line 337.'
     switch (a) {
-        // comment
+      // comment
       case 1:
       default:
     }

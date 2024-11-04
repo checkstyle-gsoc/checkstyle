@@ -31,20 +31,14 @@ import com.puppycrawl.tools.checkstyle.utils.CodePointUtil;
 import com.puppycrawl.tools.checkstyle.utils.CommonUtil;
 
 /**
+ * <div>
+ * Checks for empty blocks.
+ * </div>
+ *
  * <p>
- * Checks for empty blocks. This check does not validate sequential blocks.
+ * This check does not validate sequential blocks. This check does not violate fallthrough.
  * </p>
- * <p>
- * Sequential blocks won't be checked. Also, no violations for fallthrough:
- * </p>
- * <pre>
- * switch (a) {
- *   case 1:                          // no violation
- *   case 2:                          // no violation
- *   case 3: someMethod(); { }        // no violation
- *   default: break;
- * }
- * </pre>
+ *
  * <p>
  * NOTE: This check processes LITERAL_CASE and LITERAL_DEFAULT separately.
  * Verification empty block is done for single nearest {@code case} or {@code default}.
@@ -84,9 +78,11 @@ import com.puppycrawl.tools.checkstyle.utils.CommonUtil;
  * LITERAL_SYNCHRONIZED</a>.
  * </li>
  * </ul>
+ *
  * <p>
  * Parent is {@code com.puppycrawl.tools.checkstyle.TreeWalker}
  * </p>
+ *
  * <p>
  * Violation Message Keys:
  * </p>

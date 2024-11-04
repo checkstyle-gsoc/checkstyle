@@ -131,7 +131,7 @@ public final class InlineConfigParser {
             .compile(".*//\\s*violation (\\d+) lines below\\s*(?:['\"](.*)['\"])?$");
 
     /**
-     * <p>
+     * <div>
      * Multiple violations for above line. Messages are X lines below.
      * {@code
      *   // X violations above:
@@ -140,13 +140,13 @@ public final class InlineConfigParser {
      * }
      *
      * Messages are matched by {@link InlineConfigParser#VIOLATION_MESSAGE_PATTERN}
-     * </p>
+     * </div>
      */
     private static final Pattern VIOLATIONS_ABOVE_PATTERN_WITH_MESSAGES = Pattern
             .compile(".*//\\s*(\\d+) violations above:$");
 
     /**
-     * <p>
+     * <div>
      * Multiple violations for line. Violations are Y lines above, messages are X lines below.
      * {@code
      *   // X violations Y lines above:
@@ -155,13 +155,13 @@ public final class InlineConfigParser {
      * }
      *
      * Messages are matched by {@link InlineConfigParser#VIOLATION_MESSAGE_PATTERN}
-     * </p>
+     * </div>
      */
     private static final Pattern VIOLATIONS_SOME_LINES_ABOVE_PATTERN = Pattern
             .compile(".*//\\s*(\\d+) violations (\\d+) lines above:$");
 
     /**
-     * <p>
+     * <div>
      * Multiple violations for line. Violations are Y lines below, messages are X lines below.
      * {@code
      *   // X violations Y lines below:
@@ -170,7 +170,7 @@ public final class InlineConfigParser {
      * }
      *
      * Messages are matched by {@link InlineConfigParser#VIOLATION_MESSAGE_PATTERN}
-     * </p>
+     * </div>
      */
     private static final Pattern VIOLATIONS_SOME_LINES_BELOW_PATTERN = Pattern
             .compile(".*//\\s*(\\d+) violations (\\d+) lines below:$");
@@ -210,8 +210,6 @@ public final class InlineConfigParser {
             "com.puppycrawl.tools.checkstyle.checks.AvoidEscapedUnicodeCharactersCheck",
             "com.puppycrawl.tools.checkstyle.checks.blocks.EmptyCatchBlockCheck",
             "com.puppycrawl.tools.checkstyle.checks.blocks.NeedBracesCheck",
-            "com.puppycrawl.tools.checkstyle.checks.coding.ArrayTrailingCommaCheck",
-            "com.puppycrawl.tools.checkstyle.checks.coding.AvoidInlineConditionalsCheck",
             "com.puppycrawl.tools.checkstyle.checks.coding"
                     + ".AvoidNoArgumentSuperConstructorCallCheck",
             "com.puppycrawl.tools.checkstyle.checks.coding.CovariantEqualsCheck",
@@ -259,7 +257,6 @@ public final class InlineConfigParser {
             "com.puppycrawl.tools.checkstyle.checks.design.DesignForExtensionCheck",
             "com.puppycrawl.tools.checkstyle.checks.design.HideUtilityClassConstructorCheck",
             "com.puppycrawl.tools.checkstyle.checks.design.InnerTypeLastCheck",
-            "com.puppycrawl.tools.checkstyle.checks.design.InterfaceIsTypeCheck",
             "com.puppycrawl.tools.checkstyle.checks.design.MutableExceptionCheck",
             "com.puppycrawl.tools.checkstyle.checks.design.OneTopLevelClassCheck",
             "com.puppycrawl.tools.checkstyle.checks.design.SealedShouldHavePermitsListCheck",
@@ -269,7 +266,6 @@ public final class InlineConfigParser {
             "com.puppycrawl.tools.checkstyle.checks.imports.AvoidStarImportCheck",
             "com.puppycrawl.tools.checkstyle.checks.imports.AvoidStaticImportCheck",
             "com.puppycrawl.tools.checkstyle.checks.imports.IllegalImportCheck",
-            "com.puppycrawl.tools.checkstyle.checks.imports.UnusedImportsCheck",
             "com.puppycrawl.tools.checkstyle.checks.javadoc."
                     + "AbstractJavadocCheckTest$TokenIsNotInAcceptablesCheck",
             "com.puppycrawl.tools.checkstyle.checks.javadoc.AtclauseOrderCheck",
@@ -316,7 +312,6 @@ public final class InlineConfigParser {
             "com.puppycrawl.tools.checkstyle.checks.naming.StaticVariableNameCheck",
             "com.puppycrawl.tools.checkstyle.checks.naming.TypeNameCheck",
             "com.puppycrawl.tools.checkstyle.checks.NoCodeInFileCheck",
-            "com.puppycrawl.tools.checkstyle.checks.OuterTypeFilenameCheck",
             "com.puppycrawl.tools.checkstyle.checks.regexp.RegexpMultilineCheck",
             "com.puppycrawl.tools.checkstyle.checks.regexp.RegexpSinglelineCheck",
             "com.puppycrawl.tools.checkstyle.checks.regexp.RegexpSinglelineJavaCheck",
@@ -331,7 +326,6 @@ public final class InlineConfigParser {
             "com.puppycrawl.tools.checkstyle.checks.sizes.RecordComponentNumberCheck",
             "com.puppycrawl.tools.checkstyle.checks.TodoCommentCheck",
             "com.puppycrawl.tools.checkstyle.checks.TrailingCommentCheck",
-            "com.puppycrawl.tools.checkstyle.checks.UncommentedMainCheck",
             "com.puppycrawl.tools.checkstyle.checks.UpperEllCheck",
             "com.puppycrawl.tools.checkstyle.checks.whitespace.NoLineWrapCheck",
             "com.puppycrawl.tools.checkstyle.checks.whitespace.NoWhitespaceAfterCheck",

@@ -19,6 +19,9 @@
 
 package com.puppycrawl.tools.checkstyle.checks.coding;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import com.puppycrawl.tools.checkstyle.FileStatefulCheck;
@@ -29,10 +32,10 @@ import com.puppycrawl.tools.checkstyle.utils.CommonUtil;
 import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
 
 /**
- * <p>
+ * <div>
  * Checks if unnecessary parentheses are used in a statement or expression.
  * The check will flag the following with warnings:
- * </p>
+ * </div>
  * <pre>
  * return (x);          // parens around identifier
  * return (x + 1);      // parens around return value
@@ -44,6 +47,7 @@ import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
  * boolean b = (~a) &gt; -27            // parens around ~a
  *             &amp;&amp; (a-- &lt; 30);        // parens around expression
  * </pre>
+ *
  * <p>
  * The check is not "type aware", that is to say, it can't tell if parentheses
  * are unnecessary based on the types in an expression. The check is partially aware about
@@ -56,6 +60,7 @@ import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
  * int q = 4;
  * int r = 3;
  * if (p == (q &lt;= r)) {}</pre>
+ *
  * <p>
  * In the first case, given that <em>a</em>, <em>b</em>, and <em>c</em> are
  * all {@code int} variables, the parentheses around {@code a + b}
@@ -66,6 +71,7 @@ import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
  * and <em>r</em> were {@code boolean} still there will be no violation
  * raised as check is not "type aware".
  * </p>
+ *
  * <p>
  * The partial support for operator precedence includes cases of the following type:
  * </p>
@@ -179,9 +185,11 @@ import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
  * POST_DEC</a>.
  * </li>
  * </ul>
+ *
  * <p>
  * Parent is {@code com.puppycrawl.tools.checkstyle.TreeWalker}
  * </p>
+ *
  * <p>
  * Violation Message Keys:
  * </p>
@@ -436,6 +444,7 @@ public class UnnecessaryParenthesesCheck extends AbstractCheck {
             TokenTypes.BXOR,
             TokenTypes.BOR,
             TokenTypes.BAND,
+            TokenTypes.QUESTION,
         };
     }
 
@@ -452,6 +461,10 @@ public class UnnecessaryParenthesesCheck extends AbstractCheck {
 
         if (isLambdaSingleParameterSurrounded(ast)) {
             log(ast, MSG_LAMBDA);
+        }
+        else if (ast.getType() == TokenTypes.QUESTION) {
+            getParenthesesChildrenAroundQuestion(ast)
+                .forEach(unnecessaryChild -> log(unnecessaryChild, MSG_EXPR));
         }
         else if (parent.getType() != TokenTypes.ANNOTATION_MEMBER_VALUE_PAIR) {
             final int type = ast.getType();
@@ -677,6 +690,27 @@ public class UnnecessaryParenthesesCheck extends AbstractCheck {
             }
         }
         return result;
+    }
+
+    /**
+     *  Returns the direct LPAREN tokens children to a given QUESTION token which
+     *  contain an expression not a literal variable.
+     *
+     *  @param questionToken {@code DetailAST} question token to be checked
+     *  @return the direct children to the given question token which their types are LPAREN
+     *          tokens and not contain a literal inside the parentheses
+     */
+    private static List<DetailAST> getParenthesesChildrenAroundQuestion(DetailAST questionToken) {
+        final List<DetailAST> surroundedChildren = new ArrayList<>();
+        DetailAST directChild = questionToken.getFirstChild();
+        while (directChild != null) {
+            if (directChild.getType() == TokenTypes.LPAREN
+                    && !TokenUtil.isOfType(directChild.getNextSibling(), LITERALS)) {
+                surroundedChildren.add(directChild);
+            }
+            directChild = directChild.getNextSibling();
+        }
+        return Collections.unmodifiableList(surroundedChildren);
     }
 
     /**

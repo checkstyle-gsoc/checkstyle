@@ -9,12 +9,13 @@
     <section name="DeclarationOrder">
       <p>Since Checkstyle 3.2</p>
       <subsection name="Description" id="Description">
-        <p>
+        <div>
           Checks that the parts of a class, record, or interface declaration appear in the order
           suggested by the
           <a href="../../styleguides/sun-code-conventions-19990420/CodeConventions.doc2.html#a1852">
             Code Conventions for the Java Programming Language</a>.
-        </p>
+        </div>
+
         <p>
           According to
           <a href="../../styleguides/sun-code-conventions-19990420/CodeConventions.doc2.html#a1852">
@@ -74,13 +75,13 @@ public class A {
         </p>
         <macro name="example">
           <param name="path"
-                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/declarationorder/Example1.txt"/>
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/declarationorder/Example1.java"/>
           <param name="type" value="config"/>
         </macro>
         <p id="Example1-code">Example:</p>
         <macro name="example">
           <param name="path"
-                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/declarationorder/Example1.txt"/>
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/declarationorder/Example1.java"/>
           <param name="type" value="code"/>
         </macro>
         <p id="Example2-config">
@@ -88,13 +89,13 @@ public class A {
         </p>
         <macro name="example">
           <param name="path"
-                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/declarationorder/Example2.txt"/>
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/declarationorder/Example2.java"/>
           <param name="type" value="config"/>
         </macro>
         <p id="Example2-code">Example:</p>
         <macro name="example">
           <param name="path"
-                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/declarationorder/Example2.txt"/>
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/declarationorder/Example2.java"/>
           <param name="type" value="code"/>
         </macro>
         <p id="Example3-config">
@@ -102,13 +103,13 @@ public class A {
         </p>
         <macro name="example">
           <param name="path"
-                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/declarationorder/Example3.txt"/>
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/declarationorder/Example3.java"/>
           <param name="type" value="config"/>
         </macro>
         <p id="Example3-code">Example:</p>
         <macro name="example">
           <param name="path"
-                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/declarationorder/Example3.txt"/>
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/declarationorder/Example3.java"/>
           <param name="type" value="code"/>
         </macro>
       </subsection>

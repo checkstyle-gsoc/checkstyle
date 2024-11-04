@@ -951,7 +951,7 @@
     <message>call to setFileExtensions(java.lang.String...) not allowed on the given receiver.</message>
     <lineContent>setFileExtensions(&quot;java&quot;);</lineContent>
     <details>
-      found   : @UnderInitialization(com.puppycrawl.tools.checkstyle.api.AbstractFileSetCheck.class) @NonNull AbstractFileSetCheck
+      found   : @UnderInitialization(com.puppycrawl.tools.checkstyle.api.AbstractFileSetCheck.class) @NonNull TreeWalker
       required: @Initialized @NonNull AbstractFileSetCheck
     </details>
   </checkerFrameworkError>
@@ -1471,7 +1471,7 @@
     <message>call to setFileExtensions(java.lang.String...) not allowed on the given receiver.</message>
     <lineContent>setFileExtensions(&quot;properties&quot;);</lineContent>
     <details>
-      found   : @UnderInitialization(com.puppycrawl.tools.checkstyle.checks.OrderedPropertiesCheck.class) @NonNull AbstractFileSetCheck
+      found   : @UnderInitialization(com.puppycrawl.tools.checkstyle.checks.OrderedPropertiesCheck.class) @NonNull OrderedPropertiesCheck
       required: @Initialized @NonNull AbstractFileSetCheck
     </details>
   </checkerFrameworkError>
@@ -1595,7 +1595,7 @@
     <message>call to setFileExtensions(java.lang.String...) not allowed on the given receiver.</message>
     <lineContent>setFileExtensions(&quot;properties&quot;);</lineContent>
     <details>
-      found   : @UnderInitialization(com.puppycrawl.tools.checkstyle.api.AbstractFileSetCheck.class) @NonNull AbstractFileSetCheck
+      found   : @UnderInitialization(com.puppycrawl.tools.checkstyle.api.AbstractFileSetCheck.class) @NonNull TranslationCheck
       required: @Initialized @NonNull AbstractFileSetCheck
     </details>
   </checkerFrameworkError>
@@ -1667,7 +1667,7 @@
     <message>call to setFileExtensions(java.lang.String...) not allowed on the given receiver.</message>
     <lineContent>setFileExtensions(&quot;properties&quot;);</lineContent>
     <details>
-      found   : @UnderInitialization(com.puppycrawl.tools.checkstyle.checks.UniquePropertiesCheck.class) @NonNull AbstractFileSetCheck
+      found   : @UnderInitialization(com.puppycrawl.tools.checkstyle.checks.UniquePropertiesCheck.class) @NonNull UniquePropertiesCheck
       required: @Initialized @NonNull AbstractFileSetCheck
     </details>
   </checkerFrameworkError>
@@ -3993,9 +3993,9 @@
     <fileName>src/main/java/com/puppycrawl/tools/checkstyle/checks/javadoc/AbstractJavadocCheck.java</fileName>
     <specifier>type.argument</specifier>
     <message>incompatible type argument for type parameter T of ThreadLocal.</message>
-    <lineContent>private static final ThreadLocal&lt;Map&lt;LineColumn, ParseStatus&gt;&gt; TREE_CACHE =</lineContent>
+    <lineContent>private static final ThreadLocal&lt;Map&lt;Integer, ParseStatus&gt;&gt; TREE_CACHE =</lineContent>
     <details>
-      found   : @Initialized @NonNull Map&lt;@Initialized @NonNull LineColumn, @Initialized @NonNull ParseStatus&gt;
+      found   : @Initialized @NonNull Map&lt;@Initialized @NonNull Integer, @Initialized @NonNull ParseStatus&gt;
       required: [extends @Initialized @Nullable Object super null (NullType)]
     </details>
   </checkerFrameworkError>
@@ -4228,7 +4228,7 @@
     <message>call to setFileExtensions(java.lang.String...) not allowed on the given receiver.</message>
     <lineContent>setFileExtensions(&quot;java&quot;);</lineContent>
     <details>
-      found   : @UnderInitialization(com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocPackageCheck.class) @NonNull AbstractFileSetCheck
+      found   : @UnderInitialization(com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocPackageCheck.class) @NonNull JavadocPackageCheck
       required: @Initialized @NonNull AbstractFileSetCheck
     </details>
   </checkerFrameworkError>
@@ -4570,13 +4570,6 @@
     <specifier>initialization.fields.uninitialized</specifier>
     <message>the constructor does not initialize fields: matcher, text</message>
     <lineContent>/* package */ MultilineDetector(DetectorOptions options) {</lineContent>
-  </checkerFrameworkError>
-
-  <checkerFrameworkError unstable="false">
-    <fileName>src/main/java/com/puppycrawl/tools/checkstyle/checks/regexp/RegexpCheck.java</fileName>
-    <specifier>initialization.field.uninitialized</specifier>
-    <message>the default constructor does not initialize field matcher</message>
-    <lineContent>private Matcher matcher;</lineContent>
   </checkerFrameworkError>
 
   <checkerFrameworkError unstable="false">
@@ -5649,21 +5642,10 @@
     <fileName>src/main/java/com/puppycrawl/tools/checkstyle/gui/ParseTreeTableModel.java</fileName>
     <specifier>argument</specifier>
     <message>incompatible argument for parameter childIndices of ParseTreeTableModel.fireTreeStructureChanged.</message>
-    <lineContent>fireTreeStructureChanged(this, path, null, (Object[]) null);</lineContent>
+    <lineContent>fireTreeStructureChanged(this, path, null, CommonUtil.EMPTY_OBJECT_ARRAY);</lineContent>
     <details>
       found   : null (NullType)
       required: @Initialized @NonNull int @Initialized @NonNull []
-    </details>
-  </checkerFrameworkError>
-
-  <checkerFrameworkError unstable="false">
-    <fileName>src/main/java/com/puppycrawl/tools/checkstyle/gui/ParseTreeTableModel.java</fileName>
-    <specifier>argument</specifier>
-    <message>incompatible argument for parameter children of ParseTreeTableModel.fireTreeStructureChanged.</message>
-    <lineContent>fireTreeStructureChanged(this, path, null, (Object[]) null);</lineContent>
-    <details>
-      found   : @Initialized @NonNull Object @FBCBottom @Nullable []
-      required: @Initialized @NonNull Object @Initialized @NonNull []
     </details>
   </checkerFrameworkError>
 
@@ -5775,7 +5757,7 @@
     <message>call to addMouseListener(java.awt.event.MouseListener) not allowed on the given receiver.</message>
     <lineContent>addMouseListener(new MouseAdapter() {</lineContent>
     <details>
-      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull Component
+      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull TreeTable
       required: @Initialized @NonNull Component
     </details>
   </checkerFrameworkError>
@@ -5808,7 +5790,7 @@
     <message>call to getActionMap() not allowed on the given receiver.</message>
     <lineContent>getActionMap().put(command, expand);</lineContent>
     <details>
-      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull JComponent
+      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull TreeTable
       required: @Initialized @NonNull JComponent
     </details>
   </checkerFrameworkError>
@@ -5819,7 +5801,7 @@
     <message>call to getInputMap() not allowed on the given receiver.</message>
     <lineContent>getInputMap().put(stroke, command);</lineContent>
     <details>
-      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull JComponent
+      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull TreeTable
       required: @Initialized @NonNull JComponent
     </details>
   </checkerFrameworkError>
@@ -5841,7 +5823,7 @@
     <message>call to getRowHeight() not allowed on the given receiver.</message>
     <lineContent>final int height = getRowHeight();</lineContent>
     <details>
-      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull JTable
+      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull TreeTable
       required: @Initialized @NonNull JTable
     </details>
   </checkerFrameworkError>
@@ -5863,7 +5845,7 @@
     <message>call to setDefaultEditor(java.lang.Class&lt;?&gt;,javax.swing.table.TableCellEditor) not allowed on the given receiver.</message>
     <lineContent>setDefaultEditor(ParseTreeTableModel.class, new TreeTableCellEditor());</lineContent>
     <details>
-      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull JTable
+      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull TreeTable
       required: @Initialized @NonNull JTable
     </details>
   </checkerFrameworkError>
@@ -5874,7 +5856,7 @@
     <message>call to setDefaultRenderer(java.lang.Class&lt;?&gt;,javax.swing.table.TableCellRenderer) not allowed on the given receiver.</message>
     <lineContent>setDefaultRenderer(ParseTreeTableModel.class, tree);</lineContent>
     <details>
-      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull JTable
+      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull TreeTable
       required: @Initialized @NonNull JTable
     </details>
   </checkerFrameworkError>
@@ -5885,7 +5867,7 @@
     <message>call to setIntercellSpacing(java.awt.Dimension) not allowed on the given receiver.</message>
     <lineContent>setIntercellSpacing(new Dimension(0, 0));</lineContent>
     <details>
-      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull JTable
+      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull TreeTable
       required: @Initialized @NonNull JTable
     </details>
   </checkerFrameworkError>
@@ -5896,7 +5878,7 @@
     <message>call to setModel(javax.swing.table.TableModel) not allowed on the given receiver.</message>
     <lineContent>setModel(new TreeTableModelAdapter(treeTableModel, tree));</lineContent>
     <details>
-      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull JTable
+      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull TreeTable
       required: @Initialized @NonNull JTable
     </details>
   </checkerFrameworkError>
@@ -5918,7 +5900,7 @@
     <message>call to setSelectionModel(javax.swing.ListSelectionModel) not allowed on the given receiver.</message>
     <lineContent>setSelectionModel(selectionWrapper.getListSelectionModel());</lineContent>
     <details>
-      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull JTable
+      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull TreeTable
       required: @Initialized @NonNull JTable
     </details>
   </checkerFrameworkError>
@@ -5929,7 +5911,7 @@
     <message>call to setShowGrid(boolean) not allowed on the given receiver.</message>
     <lineContent>setShowGrid(false);</lineContent>
     <details>
-      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull JTable
+      found   : @UnderInitialization(javax.swing.JTable.class) @NonNull TreeTable
       required: @Initialized @NonNull JTable
     </details>
   </checkerFrameworkError>

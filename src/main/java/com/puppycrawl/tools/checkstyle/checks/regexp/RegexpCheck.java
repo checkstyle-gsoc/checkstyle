@@ -31,25 +31,29 @@ import com.puppycrawl.tools.checkstyle.api.LineColumn;
 import com.puppycrawl.tools.checkstyle.utils.CommonUtil;
 
 /**
- * <p>
+ * <div>
  * Checks that a specified pattern exists, exists less than
  * a set number of times, or does not exist in the file.
- * </p>
+ * </div>
+ *
  * <p>
  * This check combines all the functionality provided by
  * <a href="https://checkstyle.org/checks/header/regexpheader.html#RegexpHeader">RegexpHeader</a>
  * except supplying the regular expression from a file.
  * </p>
+ *
  * <p>
  * It differs from them in that it works in multiline mode. Its regular expression
  * can span multiple lines and it checks this against the whole file at once.
  * The others work in single-line mode. Their single or multiple regular expressions
  * can only span one line. They check each of these against each line in the file in turn.
  * </p>
+ *
  * <p>
  * <b>Note:</b> Because of the different mode of operation there may be some
  * changes in the regular expressions used to achieve a particular end.
  * </p>
+ *
  * <p>
  * In multiline mode...
  * </p>
@@ -70,6 +74,7 @@ import com.puppycrawl.tools.checkstyle.utils.CommonUtil;
  * Each line in the file is terminated with a line feed character.
  * </li>
  * </ul>
+ *
  * <p>
  * <b>Note:</b> Not all regular expression engines are created equal.
  * Some provide extra functions that others do not and some elements
@@ -78,6 +83,7 @@ import com.puppycrawl.tools.checkstyle.utils.CommonUtil;
  * java.util.regex package</a>; please check its documentation for details
  * of how to construct a regular expression to achieve a particular goal.
  * </p>
+ *
  * <p>
  * <b>Note:</b> When entering a regular expression as a parameter in
  * the XML config file you must also take into account the XML rules. e.g.
@@ -121,9 +127,11 @@ import com.puppycrawl.tools.checkstyle.utils.CommonUtil;
  * Default value is {@code null}.
  * </li>
  * </ul>
+ *
  * <p>
  * Parent is {@code com.puppycrawl.tools.checkstyle.TreeWalker}
  * </p>
+ *
  * <p>
  * Violation Message Keys:
  * </p>
@@ -199,17 +207,8 @@ public class RegexpCheck extends AbstractCheck {
     /** Boolean to say if we should check for duplicates. */
     private boolean checkForDuplicates;
 
-    /** Tracks number of matches made. */
-    private int matchCount;
-
-    /** Tracks number of errors. */
-    private int errorCount;
-
     /** Specify the pattern to match against. */
     private Pattern format = Pattern.compile("^$", Pattern.MULTILINE);
-
-    /** The matcher. */
-    private Matcher matcher;
 
     /**
      * Setter to specify message which is used to notify about violations,
@@ -292,60 +291,40 @@ public class RegexpCheck extends AbstractCheck {
         return CommonUtil.EMPTY_INT_ARRAY;
     }
 
-    // suppress deprecation until https://github.com/checkstyle/checkstyle/issues/11166
-    @SuppressWarnings("deprecation")
     @Override
     public void beginTree(DetailAST rootAST) {
-        matcher = format.matcher(getFileContents().getText().getFullText());
-        matchCount = 0;
-        errorCount = 0;
-        findMatch();
+        processRegexpMatches();
     }
 
     /**
-     * Recursive method that finds the matches.
+     * Processes the regexp matches and logs the number of errors in the file.
      *
-     * @noinspection TailRecursion
-     * @noinspectionreason TailRecursion - until issue #14814
      */
     // suppress deprecation until https://github.com/checkstyle/checkstyle/issues/11166
     @SuppressWarnings("deprecation")
-    private void findMatch() {
-        final boolean foundMatch = matcher.find();
-        if (foundMatch) {
-            final FileText text = getFileContents().getText();
+    private void processRegexpMatches() {
+        final Matcher matcher = format.matcher(getFileContents().getText().getFullText());
+        int errorCount = 0;
+        int matchCount = 0;
+        final FileText text = getFileContents().getText();
+        while (errorCount < errorLimit && matcher.find()) {
             final LineColumn start = text.lineColumn(matcher.start());
             final int startLine = start.getLine();
 
-            final boolean ignore = isIgnore(startLine, text, start);
-
+            final boolean ignore = isIgnore(startLine, text, start, matcher);
             if (!ignore) {
                 matchCount++;
                 if (illegalPattern || checkForDuplicates
                         && matchCount - 1 > duplicateLimit) {
                     errorCount++;
-                    logMessage(startLine);
+                    logMessage(startLine, errorCount);
                 }
             }
-            if (canContinueValidation(ignore)) {
-                findMatch();
-            }
         }
-        else if (!illegalPattern && matchCount == 0) {
-            final String msg = getMessage();
+        if (!illegalPattern && matchCount == 0) {
+            final String msg = getMessage(errorCount);
             log(1, MSG_REQUIRED_REGEXP, msg);
         }
-    }
-
-    /**
-     * Check if we can stop validation.
-     *
-     * @param ignore flag
-     * @return true is we can continue
-     */
-    private boolean canContinueValidation(boolean ignore) {
-        return errorCount <= errorLimit - 1
-                && (ignore || illegalPattern || checkForDuplicates);
     }
 
     /**
@@ -354,11 +333,12 @@ public class RegexpCheck extends AbstractCheck {
      * @param startLine position of line
      * @param text file text
      * @param start line column
+     * @param matcher The matcher
      * @return true is that need to be ignored
      */
     // suppress deprecation until https://github.com/checkstyle/checkstyle/issues/11166
     @SuppressWarnings("deprecation")
-    private boolean isIgnore(int startLine, FileText text, LineColumn start) {
+    private boolean isIgnore(int startLine, FileText text, LineColumn start, Matcher matcher) {
         final LineColumn end;
         if (matcher.end() == 0) {
             end = text.lineColumn(0);
@@ -382,9 +362,10 @@ public class RegexpCheck extends AbstractCheck {
      * Displays the right message.
      *
      * @param lineNumber the line number the message relates to.
+     * @param errorCount number of errors in the file.
      */
-    private void logMessage(int lineNumber) {
-        final String msg = getMessage();
+    private void logMessage(int lineNumber, int errorCount) {
+        final String msg = getMessage(errorCount);
 
         if (illegalPattern) {
             log(lineNumber, MSG_ILLEGAL_REGEXP, msg);
@@ -397,9 +378,10 @@ public class RegexpCheck extends AbstractCheck {
     /**
      * Provide right message.
      *
+     * @param errorCount number of errors in the file.
      * @return message for violation.
      */
-    private String getMessage() {
+    private String getMessage(int errorCount) {
         String msg;
 
         if (message == null || message.isEmpty()) {
@@ -415,5 +397,4 @@ public class RegexpCheck extends AbstractCheck {
 
         return msg;
     }
-
 }

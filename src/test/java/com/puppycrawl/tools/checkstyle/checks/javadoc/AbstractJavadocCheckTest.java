@@ -58,7 +58,7 @@ public class AbstractJavadocCheckTest extends AbstractModuleTestSupport {
     }
 
     /**
-     * <p>Configures the environment for each test.</p>
+     * Configures the environment for each test.
      * <ul>
      * <li>Start output capture for {@link System#err}</li>
      * </ul>
@@ -187,6 +187,20 @@ public class AbstractJavadocCheckTest extends AbstractModuleTestSupport {
         };
         verifyWithInlineConfigParser(getPath("InputAbstractJavadocCache1.java"),
             getPath("InputAbstractJavadocCache2.java"), expected);
+    }
+
+    @Test
+    public void testCacheWithBlockCommentInSingleLineComment() throws Exception {
+        final String[] expected = {};
+        verifyWithInlineConfigParser(getPath("InputAbstractJavadocCache3.java"), expected);
+    }
+
+    @Test
+    public void testCacheWithTwoBlockCommentAtSameLine() throws Exception {
+        final String[] expected = {
+            "13: " + getCheckMessage(SummaryJavadocCheck.class, MSG_SUMMARY_FIRST_SENTENCE),
+        };
+        verifyWithInlineConfigParser(getPath("InputAbstractJavadocCache4.java"), expected);
     }
 
     @Test
@@ -735,7 +749,7 @@ public class AbstractJavadocCheckTest extends AbstractModuleTestSupport {
         @Override
         public void visitJavadocToken(DetailNode ast) {
             if (reportVisitJavadocToken) {
-                // We reusing messages from JavadocTypeCheck
+                // We're reusing messages from JavadocTypeCheck
                 // it is not possible to use test specific bundle of messages
                 log(ast.getLineNumber(), ast.getColumnNumber(), MSG_TAG_FORMAT, ast.getText());
             }

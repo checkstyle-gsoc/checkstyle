@@ -9,9 +9,9 @@
     <section name="JavadocParagraph">
       <p>Since Checkstyle 6.0</p>
       <subsection name="Description" id="Description">
-        <p>
+        <div>
           Checks the Javadoc paragraph.
-        </p>
+        </div>
         <p>
           Checks that:
         </p>
@@ -23,7 +23,16 @@
             Each paragraph but the first has &lt;p&gt; immediately before the first word, with
             no space after.
           </li>
+          <li>
+            First paragraph tag should not precede
+            <a href="https://www.w3schools.com/html/html_blocks.asp">HTML block-tag</a>,
+            nested paragraph tags are allowed to do that.
+          </li>
         </ul>
+        <p><b>ATTENTION:</b></p>
+        <p>This Check ignores HTML comments.</p>
+        <p>The Check ignores all the nested paragraph tags,
+        it will not give any kind of violation if the paragraph tag is nested.</p>
       </subsection>
 
       <subsection name="Properties" id="Properties">
@@ -66,28 +75,68 @@
   &lt;/module&gt;
 &lt;/module&gt;
         </source>
-        <p id="Example1-code">By default, the check will report a violation if there is a new line
-          or whitespace after the &lt;p&gt; tag: </p>
+        <p id="Example1-code">By default, the check will report a violation if there is
+          no empty line before or whitespace after the &lt;p&gt; tag: </p>
         <source>
 // violation 5 lines below '&lt;p&gt; tag should be preceded with an empty line'
 /**
- * No tag (ok).
+ * No tag
  *
- * &lt;p&gt;Tag immediately before the text (ok).
- * &lt;p&gt;No blank line before the tag (violation).
+ * &lt;p&gt;Tag immediately before the text
+ * &lt;p&gt;No blank line before the tag
  *
  * &lt;p&gt;
- * New line after tag (violation).
+ * New line after tag
  *
- * &lt;p&gt; Whitespace after tag (violation).
+ * &lt;p&gt; Whitespace after tag
  *
+ * &lt;p&gt;&lt;b&gt;p tag before inline tag B, this is ok&lt;/b&gt;&lt;/p&gt;
  */
-// violation 3 lines above 'tag should be placed immediately before the first word'
+// violation 4 lines above 'tag should be placed immediately before the first word'
+
 public class Example1 {
+
+
+  // violation 4 lines below '&lt;p&gt; tag should not precede HTML block-tag '&lt;pre&gt;''
+  /**
+   * No tag
+   *
+   * &lt;p&gt;
+   * &lt;pre&gt;item 1&lt;/pre&gt;
+   *
+   * &lt;table&gt;
+   * &lt;tbody&gt;
+   * &lt;p&gt;
+   * &lt;tr&gt;
+   * nested paragraph preceding block tag, this is ok.
+   * &lt;/tr&gt;
+   * &lt;/tbody&gt;
+   * &lt;/table&gt;
+   */
+
+  void foo1() {}
+
+
+  // violation 2 lines below 'Redundant &lt;p&gt; tag'
+  /**
+   * &lt;p&gt;
+   * Checks whether a redundant tag is present
+   * &lt;/p&gt;
+   */
+
+  void foo2() {}
+
+  // violation 3 lines below 'Empty line should be followed by &lt;p&gt; tag'
+  /**
+   * Double newline.
+   *
+   * Some Paragraph.
+   */
+  void foo3() {}
 }
         </source>
         <p id="Example2-config">
-          To allow newlines and spaces immediately after the &lt;p&gt; tag:
+          To not allow newlines and spaces immediately after the &lt;p&gt; tag:
         </p>
         <source>
 &lt;module name=&quot;Checker&quot;&gt;
@@ -100,25 +149,64 @@ public class Example1 {
         </source>
         <p id="Example2-code">
           In case of <code>allowNewlineParagraph</code> set to <code>false</code>
-          the following example will not have any violations:
+          the following example will have violations:
         </p>
         <source>
 // violation 5 lines below '&lt;p&gt; tag should be preceded with an empty line'
 /**
- * No tag (ok).
+ * No tag
  *
- * &lt;p&gt;Tag immediately before the text (ok).
- * &lt;p&gt;No blank line before the tag.
+ * &lt;p&gt;Tag immediately before the text
+ * &lt;p&gt;No blank line before the tag
  *
  * &lt;p&gt;
- * New line after tag (ok).
+ * New line after tag
  *
- * &lt;p&gt; Whitespace after tag (ok).
+ * &lt;p&gt; Whitespace after tag
  *
+ * &lt;p&gt;&lt;b&gt;p tag before inline tag B, this is ok&lt;/b&gt;&lt;/p&gt;
  */
-// violation 6 lines above 'tag should be placed immediately before the first word'
-// violation 4 lines above 'tag should be placed immediately before the first word'
+// violation 7 lines above 'tag should be placed immediately before the first word'
+// violation 5 lines above 'tag should be placed immediately before the first word'
 public class Example2 {
+  // 2 violations 6 lines below:
+  //  'tag should be placed immediately before the first word'
+  //  '&lt;p&gt; tag should not precede HTML block-tag '&lt;pre&gt;''
+  /**
+   * No tag
+   *
+   * &lt;p&gt;
+   * &lt;pre&gt;item 1&lt;/pre&gt;
+   *
+   * &lt;table&gt;
+   * &lt;tbody&gt;
+   * &lt;p&gt;
+   * &lt;tr&gt;
+   * nested paragraph preceding block tag, this is ok.
+   * &lt;/tr&gt;
+   * &lt;/tbody&gt;
+   * &lt;/table&gt;
+   */
+
+  void foo1() {}
+
+  // 2 violations 4 lines below:
+  //  'tag should be placed immediately before the first word'
+  //  'Redundant &lt;p&gt; tag'
+  /**
+   * &lt;p&gt;
+   * Checks whether a redundant tag is present
+   * &lt;/p&gt;
+   */
+  void foo2() {}
+
+  // violation 3 lines below 'Empty line should be followed by &lt;p&gt; tag'
+  /**
+   * Double newline.
+   *
+   * Some Paragraph.
+   */
+  void foo3() {}
 }
         </source>
       </subsection>

@@ -4,10 +4,10 @@
       <check fully-qualified-name="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"
              name="WhitespaceAround"
              parent="com.puppycrawl.tools.checkstyle.TreeWalker">
-         <description>&lt;p&gt;
+         <description>&lt;div&gt;
  Checks that a token is surrounded by whitespace. Empty constructor,
  method, class, enum, interface, loop bodies (blocks), lambdas of the form
- &lt;/p&gt;
+ &lt;/div&gt;
  &lt;pre&gt;
  public MyClass() {}      // empty constructor
  public void func() {}    // empty method
@@ -21,11 +21,14 @@
  Runnable noop = () -&amp;gt; {}; // empty lambda
  public @interface Beta {} // empty annotation type
  &lt;/pre&gt;
+
  &lt;p&gt;
  may optionally be exempted from the policy using the {@code allowEmptyMethods},
  {@code allowEmptyConstructors}, {@code allowEmptyTypes}, {@code allowEmptyLoops},
- {@code allowEmptyLambdas} and {@code allowEmptyCatches} properties.
+ {@code allowEmptyLambdas}, {@code allowEmptyCatches}
+ and {@code allowEmptySwitchBlockStatements} properties.
  &lt;/p&gt;
+
  &lt;p&gt;
  This check does not flag as violation double brace initialization like:
  &lt;/p&gt;
@@ -34,6 +37,7 @@
      setProperty("key", "value");
  }};
  &lt;/pre&gt;
+
  &lt;p&gt;
  Parameter allowEmptyCatches allows to suppress violations when token list
  contains SLIST to check if beginning of block is surrounded by whitespace
@@ -44,11 +48,13 @@
      k = 5 / i;
  } catch (ArithmeticException ex) {}
  &lt;/pre&gt;
+
  &lt;p&gt;
  With this property turned off, this raises violation because the beginning
  of the catch block (left curly bracket) is not separated from the end
  of the catch block (right curly bracket).
  &lt;/p&gt;
+
  &lt;p&gt;
  Note: &lt;a href="https://openjdk.org/jeps/361"&gt;
  Switch expressions&lt;/a&gt; are ignored by this check.
@@ -68,6 +74,12 @@
             </property>
             <property default-value="false" name="allowEmptyMethods" type="boolean">
                <description>Allow empty method bodies.</description>
+            </property>
+            <property default-value="false"
+                      name="allowEmptySwitchBlockStatements"
+                      type="boolean">
+               <description>Allow empty switch blocks
+ and block statements.</description>
             </property>
             <property default-value="false" name="allowEmptyTypes" type="boolean">
                <description>Allow empty class, interface and enum bodies.</description>

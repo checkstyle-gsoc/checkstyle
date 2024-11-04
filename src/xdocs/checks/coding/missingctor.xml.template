@@ -9,10 +9,10 @@
     <section name="MissingCtor">
       <p>Since Checkstyle 3.4</p>
       <subsection name="Description" id="Description">
-        <p>
+        <div>
           Checks that classes (except abstract ones) define a constructor and don't
           rely on the default one.
-        </p>
+        </div>
       </subsection>
 
       <subsection name="Examples" id="Examples">
@@ -21,13 +21,13 @@
         </p>
         <macro name="example">
           <param name="path"
-                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/missingctor/Example1.txt"/>
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/missingctor/Example1.java"/>
           <param name="type" value="config"/>
         </macro>
         <p id="Example1-code">Example:</p>
         <macro name="example">
           <param name="path"
-                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/missingctor/Example1.txt"/>
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/missingctor/Example1.java"/>
           <param name="type" value="code"/>
         </macro>
       </subsection>

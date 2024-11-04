@@ -22,7 +22,6 @@ package com.puppycrawl.tools.checkstyle.checks.javadoc;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -45,17 +44,20 @@ import com.puppycrawl.tools.checkstyle.utils.CommonUtil;
 import com.puppycrawl.tools.checkstyle.utils.UnmodifiableCollectionUtil;
 
 /**
- * <p>
+ * <div>
  * Checks the Javadoc of a method or constructor.
- * </p>
+ * </div>
+ *
  * <p>
  * Violates parameters and type parameters for which no param tags are present can
  * be suppressed by defining property {@code allowMissingParamTags}.
  * </p>
+ *
  * <p>
  * Violates methods which return non-void but for which no return tag is present can
  * be suppressed by defining property {@code allowMissingReturnTag}.
  * </p>
+ *
  * <p>
  * Violates exceptions which are declared to be thrown (by {@code throws} in the method
  * signature or by {@code throw new} in the method body), but for which no throws tag is
@@ -74,11 +76,13 @@ import com.puppycrawl.tools.checkstyle.utils.UnmodifiableCollectionUtil;
  * throw statements inside such classes are going to be evaluated, so they are ignored.
  * </li>
  * </ul>
+ *
  * <p>
  * ATTENTION: Checkstyle does not have information about hierarchy of exception types
  * so usage of base class is considered as separate exception type.
  * As workaround, you need to specify both types in javadoc (parent and exact type).
  * </p>
+ *
  * <p>
  * Javadoc is not required on a method that is tagged with the {@code @Override}
  * annotation. However, under Java 5 it is not possible to mark a method required
@@ -86,11 +90,13 @@ import com.puppycrawl.tools.checkstyle.utils.UnmodifiableCollectionUtil;
  * supports using the convention of using a single {@code {@inheritDoc}} tag
  * instead of all the other tags.
  * </p>
+ *
  * <p>
  * Note that only inheritable items will allow the {@code {@inheritDoc}}
  * tag to be used in place of comments. Static methods at all visibilities,
  * private non-static methods and constructors are not inheritable.
  * </p>
+ *
  * <p>
  * For example, if the following method is implementing a method required by
  * an interface, then the Javadoc could be done as:
@@ -145,9 +151,11 @@ import com.puppycrawl.tools.checkstyle.utils.UnmodifiableCollectionUtil;
  * COMPACT_CTOR_DEF</a>.
  * </li>
  * </ul>
+ *
  * <p>
  * Parent is {@code com.puppycrawl.tools.checkstyle.TreeWalker}
  * </p>
+ *
  * <p>
  * Violation Message Keys:
  * </p>
@@ -338,12 +346,7 @@ public class JavadocMethodCheck extends AbstractCheck {
 
     @Override
     public final int[] getRequiredTokens() {
-        return new int[] {
-            TokenTypes.CLASS_DEF,
-            TokenTypes.INTERFACE_DEF,
-            TokenTypes.ENUM_DEF,
-            TokenTypes.RECORD_DEF,
-        };
+        return CommonUtil.EMPTY_INT_ARRAY;
     }
 
     @Override
@@ -354,25 +357,16 @@ public class JavadocMethodCheck extends AbstractCheck {
     @Override
     public int[] getAcceptableTokens() {
         return new int[] {
-            TokenTypes.CLASS_DEF,
-            TokenTypes.ENUM_DEF,
-            TokenTypes.INTERFACE_DEF,
             TokenTypes.METHOD_DEF,
             TokenTypes.CTOR_DEF,
             TokenTypes.ANNOTATION_FIELD_DEF,
-            TokenTypes.RECORD_DEF,
             TokenTypes.COMPACT_CTOR_DEF,
         };
     }
 
     @Override
     public final void visitToken(DetailAST ast) {
-        if (ast.getType() == TokenTypes.METHOD_DEF
-                 || ast.getType() == TokenTypes.CTOR_DEF
-                 || ast.getType() == TokenTypes.ANNOTATION_FIELD_DEF
-                 || ast.getType() == TokenTypes.COMPACT_CTOR_DEF) {
-            processAST(ast);
-        }
+        processAST(ast);
     }
 
     /**
@@ -906,8 +900,6 @@ public class JavadocMethodCheck extends AbstractCheck {
     private void checkThrowsTags(List<JavadocTag> tags,
             List<ExceptionInfo> throwsList, boolean reportExpectedTags) {
         // Loop over the tags, checking to see they exist in the throws.
-        // The foundThrows used for performance only
-        final Set<String> foundThrows = new HashSet<>();
         final ListIterator<JavadocTag> tagIt = tags.listIterator();
         while (tagIt.hasNext()) {
             final JavadocTag tag = tagIt.next();
@@ -918,10 +910,7 @@ public class JavadocMethodCheck extends AbstractCheck {
             tagIt.remove();
 
             // Loop looking for matching throw
-            final Token token = new Token(tag.getFirstArg(), tag.getLineNo(), tag
-                    .getColumnNo());
-            final ClassInfo documentedClassInfo = new ClassInfo(token);
-            processThrows(throwsList, documentedClassInfo, foundThrows);
+            processThrows(throwsList, tag.getFirstArg());
         }
         // Now dump out all throws without tags :- unless
         // the user has chosen to suppress these problems
@@ -940,25 +929,16 @@ public class JavadocMethodCheck extends AbstractCheck {
      * Verifies that documented exception is in throws.
      *
      * @param throwsIterable collection of throws
-     * @param documentedClassInfo documented exception class info
-     * @param foundThrows previously found throws
+     * @param documentedClassName documented exception class name
      */
     private static void processThrows(Iterable<ExceptionInfo> throwsIterable,
-                                      ClassInfo documentedClassInfo, Set<String> foundThrows) {
-        ExceptionInfo foundException = null;
-
-        // First look for matches on the exception name
+                                      String documentedClassName) {
         for (ExceptionInfo exceptionInfo : throwsIterable) {
             if (isClassNamesSame(exceptionInfo.getName().getText(),
-                    documentedClassInfo.getName().getText())) {
-                foundException = exceptionInfo;
+                    documentedClassName)) {
+                exceptionInfo.setFound();
                 break;
             }
-        }
-
-        if (foundException != null) {
-            foundException.setFound();
-            foundThrows.add(documentedClassInfo.getName().getText());
         }
     }
 

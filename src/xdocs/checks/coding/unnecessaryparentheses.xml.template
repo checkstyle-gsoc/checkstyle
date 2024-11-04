@@ -9,10 +9,10 @@
     <section name="UnnecessaryParentheses">
       <p>Since Checkstyle 3.4</p>
       <subsection name="Description" id="Description">
-        <p>
+        <div>
           Checks if unnecessary parentheses are used in a statement or expression.
           The check will flag the following with warnings:
-        </p>
+        </div>
         <source>
 return (x);          // parens around identifier
 return (x + 1);      // parens around return value
@@ -115,6 +115,21 @@ if ((++f) &gt; g &amp;&amp; a) { // violation, unnecessary paren
         <macro name="example">
           <param name="path"
                  value="resources/com/puppycrawl/tools/checkstyle/checks/coding/unnecessaryparentheses/Example2.java"/>
+          <param name="type" value="code"/>
+        </macro>
+        <p id="Example3-config">
+          To configure the check to detect unnecessary parentheses around conditional expressions
+          <code> '?' </code>:
+        </p>
+        <macro name="example">
+          <param name="path"
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/unnecessaryparentheses/Example3.java"/>
+          <param name="type" value="config"/>
+        </macro>
+        <p id="Example3-code">Example:</p>
+        <macro name="example">
+          <param name="path"
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/unnecessaryparentheses/Example3.java"/>
           <param name="type" value="code"/>
         </macro>
       </subsection>

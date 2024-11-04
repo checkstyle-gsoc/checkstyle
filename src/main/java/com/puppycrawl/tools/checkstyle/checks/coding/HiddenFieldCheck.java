@@ -35,19 +35,22 @@ import com.puppycrawl.tools.checkstyle.utils.ScopeUtil;
 import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
 
 /**
- * <p>
+ * <div>
  * Checks that a local variable or a parameter does not shadow
  * a field that is defined in the same class.
- * </p>
+ * </div>
+ *
  * <p>
  * It is possible to configure the check to ignore all property setter methods.
  * </p>
+ *
  * <p>
  * A method is recognized as a setter if it is in the following form
  * </p>
  * <pre>
  * ${returnType} set${Name}(${anyType} ${name}) { ... }
  * </pre>
+ *
  * <p>
  * where ${anyType} is any primitive type, class or interface name;
  * ${name} is name of the variable that is being set and ${Name} its
@@ -57,6 +60,7 @@ import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
  * <pre>
  * void setTime(long time) { ... }
  * </pre>
+ *
  * <p>
  * Any other return types will not let method match a setter pattern. However,
  * by setting <em>setterCanReturnItsClass</em> property to <em>true</em>
@@ -68,6 +72,7 @@ import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
  *   PageBuilder setName(String name) { ... }
  * }
  * </pre>
+ *
  * <p>
  * Such methods are known as chain-setters and a common when Builder-pattern
  * is used. Property <em>setterCanReturnItsClass</em> has effect only if
@@ -119,9 +124,11 @@ import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
  * RECORD_COMPONENT_DEF</a>.
  * </li>
  * </ul>
+ *
  * <p>
  * Parent is {@code com.puppycrawl.tools.checkstyle.TreeWalker}
  * </p>
+ *
  * <p>
  * Violation Message Keys:
  * </p>
@@ -649,13 +656,17 @@ public class HiddenFieldCheck
          *
          * @param field the field to check
          * @return true if this FieldFrame contains instance field
-         * @noinspection TailRecursion
-         * @noinspectionreason TailRecursion - until issue #14814
          */
         public boolean containsInstanceField(String field) {
-            return instanceFields.contains(field)
-                    || !staticType
-                    && parent.containsInstanceField(field);
+            FieldFrame currentParent = parent;
+            boolean contains = instanceFields.contains(field);
+            boolean isStaticType = staticType;
+            while (!isStaticType && !contains) {
+                contains = currentParent.instanceFields.contains(field);
+                isStaticType = currentParent.staticType;
+                currentParent = currentParent.parent;
+            }
+            return contains;
         }
 
         /**
@@ -663,13 +674,15 @@ public class HiddenFieldCheck
          *
          * @param field the field to check
          * @return true if this FieldFrame contains static field
-         * @noinspection TailRecursion
-         * @noinspectionreason TailRecursion - until issue #14814
          */
         public boolean containsStaticField(String field) {
-            return staticFields.contains(field)
-                    || parent != null
-                    && parent.containsStaticField(field);
+            FieldFrame currentParent = parent;
+            boolean contains = staticFields.contains(field);
+            while (currentParent != null && !contains) {
+                contains = currentParent.staticFields.contains(field);
+                currentParent = currentParent.parent;
+            }
+            return contains;
         }
 
         /**

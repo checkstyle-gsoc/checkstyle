@@ -9,11 +9,11 @@
     <section name="MatchXpath">
       <p>Since Checkstyle 8.39</p>
       <subsection name="Description" id="Description">
-        <p>
+        <div>
           Evaluates Xpath query and report violation on all matching AST nodes. This check allows
           user to implement custom checks using Xpath. If Xpath query is not specified explicitly,
           then the check does nothing.
-        </p>
+        </div>
         <p>
           It is recommended to define custom message for violation to explain what is not allowed
           and what to use instead, default message might be too abstract. To customize a message
@@ -97,37 +97,37 @@ CLASS_DEF -&gt; CLASS_DEF [1:0]
           should come before the private ones:</p>
         <macro name="example">
           <param name="path"
-                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/matchxpath/Example1.txt"/>
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/matchxpath/Example1.java"/>
           <param name="type" value="config"/>
         </macro>
         <p id="Example1-code">Example:</p>
         <macro name="example">
           <param name="path"
-                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/matchxpath/Example1.txt"/>
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/matchxpath/Example1.java"/>
           <param name="type" value="code"/>
         </macro>
         <p id="Example2-config">To violate if there are any parametrized constructors</p>
         <macro name="example">
           <param name="path"
-                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/matchxpath/Example2.txt"/>
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/matchxpath/Example2.java"/>
           <param name="type" value="config"/>
         </macro>
         <p id="Example2-code">Example:</p>
         <macro name="example">
           <param name="path"
-                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/matchxpath/Example2.txt"/>
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/matchxpath/Example2.java"/>
           <param name="type" value="code"/>
         </macro>
         <p id="Example3-config">To violate if method name is 'test' or 'foo'</p>
         <macro name="example">
           <param name="path"
-                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/matchxpath/Example3.txt"/>
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/matchxpath/Example3.java"/>
           <param name="type" value="config"/>
         </macro>
         <p id="Example3-code">Example:</p>
         <macro name="example">
           <param name="path"
-                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/matchxpath/Example3.txt"/>
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/matchxpath/Example3.java"/>
           <param name="type" value="code"/>
         </macro>
         <p id="Example4-config">
@@ -135,13 +135,13 @@ CLASS_DEF -&gt; CLASS_DEF [1:0]
         </p>
         <macro name="example">
           <param name="path"
-                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/matchxpath/Example4.txt"/>
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/matchxpath/Example4.java"/>
           <param name="type" value="config"/>
         </macro>
         <p id="Example4-code">Example:</p>
         <macro name="example">
           <param name="path"
-                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/matchxpath/Example4.txt"/>
+                 value="resources/com/puppycrawl/tools/checkstyle/checks/coding/matchxpath/Example4.java"/>
           <param name="type" value="code"/>
         </macro>
       </subsection>

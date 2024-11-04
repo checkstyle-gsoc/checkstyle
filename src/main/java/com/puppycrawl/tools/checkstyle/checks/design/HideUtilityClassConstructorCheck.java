@@ -19,21 +19,27 @@
 
 package com.puppycrawl.tools.checkstyle.checks.design;
 
+import java.util.Collections;
+import java.util.Set;
+
 import com.puppycrawl.tools.checkstyle.StatelessCheck;
 import com.puppycrawl.tools.checkstyle.api.AbstractCheck;
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
 import com.puppycrawl.tools.checkstyle.api.TokenTypes;
+import com.puppycrawl.tools.checkstyle.utils.AnnotationUtil;
 
 /**
- * <p>
+ * <div>
  * Makes sure that utility classes (classes that contain only static methods or fields in their API)
  * do not have a public constructor.
- * </p>
+ * </div>
+ *
  * <p>
  * Rationale: Instantiating utility classes does not make sense.
  * Hence, the constructors should either be private or (if you want to allow subclassing) protected.
  * A common mistake is forgetting to hide the default constructor.
  * </p>
+ *
  * <p>
  * If you make the constructor protected you may want to consider the following constructor
  * implementation technique to disallow instantiating subclasses:
@@ -51,9 +57,24 @@ import com.puppycrawl.tools.checkstyle.api.TokenTypes;
  *   }
  * }
  * </pre>
+ * <ul>
+ * <li>
+ * Property {@code ignoreAnnotatedBy} - Ignore classes annotated
+ * with the specified annotation(s). Annotation names provided in this property
+ * must exactly match the annotation names on the classes. If the target class has annotations
+ * specified with their fully qualified names (including package), the annotations in this
+ * property should also be specified with their fully qualified names. Similarly, if the target
+ * class has annotations specified with their simple names, this property should contain the
+ * annotations with the same simple names.
+ * Type is {@code java.lang.String[]}.
+ * Default value is {@code ""}.
+ * </li>
+ * </ul>
+ *
  * <p>
  * Parent is {@code com.puppycrawl.tools.checkstyle.TreeWalker}
  * </p>
+ *
  * <p>
  * Violation Message Keys:
  * </p>
@@ -74,6 +95,33 @@ public class HideUtilityClassConstructorCheck extends AbstractCheck {
      */
     public static final String MSG_KEY = "hide.utility.class";
 
+    /**
+     * Ignore classes annotated with the specified annotation(s). Annotation names
+     * provided in this property must exactly match the annotation names on the classes.
+     * If the target class has annotations specified with their fully qualified names
+     * (including package), the annotations in this property should also be specified with
+     * their fully qualified names. Similarly, if the target class has annotations specified
+     * with their simple names, this property should contain the annotations with the same
+     * simple names.
+     */
+    private Set<String> ignoreAnnotatedBy = Collections.emptySet();
+
+    /**
+     * Setter to ignore classes annotated with the specified annotation(s). Annotation names
+     * provided in this property must exactly match the annotation names on the classes.
+     * If the target class has annotations specified with their fully qualified names
+     * (including package), the annotations in this property should also be specified with
+     * their fully qualified names. Similarly, if the target class has annotations specified
+     * with their simple names, this property should contain the annotations with the same
+     * simple names.
+     *
+     * @param annotationNames specified annotation(s)
+     * @since 10.20.0
+     */
+    public void setIgnoreAnnotatedBy(String... annotationNames) {
+        ignoreAnnotatedBy = Set.of(annotationNames);
+    }
+
     @Override
     public int[] getDefaultTokens() {
         return getRequiredTokens();
@@ -92,7 +140,7 @@ public class HideUtilityClassConstructorCheck extends AbstractCheck {
     @Override
     public void visitToken(DetailAST ast) {
         // abstract class could not have private constructor
-        if (!isAbstract(ast)) {
+        if (!isAbstract(ast) && !shouldIgnoreClass(ast)) {
             final boolean hasStaticModifier = isStatic(ast);
 
             final Details details = new Details(ast);
@@ -140,6 +188,16 @@ public class HideUtilityClassConstructorCheck extends AbstractCheck {
     private static boolean isStatic(DetailAST ast) {
         return ast.findFirstToken(TokenTypes.MODIFIERS)
             .findFirstToken(TokenTypes.LITERAL_STATIC) != null;
+    }
+
+    /**
+     * Checks if class is annotated by specific annotation(s) to skip.
+     *
+     * @param ast class to check
+     * @return true if annotated by ignored annotations
+     */
+    private boolean shouldIgnoreClass(DetailAST ast) {
+        return AnnotationUtil.containsAnnotation(ast, ignoreAnnotatedBy);
     }
 
     /**

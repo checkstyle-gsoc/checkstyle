@@ -308,13 +308,13 @@ public final class JavadocTokenTypes {
      * <pre>{@code @throws SQLException if query is not correct}</pre>
      * <b>Tree:</b>
      * <pre>{@code
-     *   |--JAVADOC_TAG[3x0] : [@throws SQLException if query is not correct]
-     *       |--THROWS_LITERAL[3x0] : [@throws]
-     *       |--WS[3x7] : [ ]
-     *       |--CLASS_NAME[3x8] : [SQLException]
-     *       |--WS[3x20] : [ ]
-     *       |--DESCRIPTION[3x21] : [if query is not correct]
-     *           |--TEXT[3x21] : [if query is not correct]
+     *   JAVADOC_TAG -> JAVADOC_TAG
+     *    |--THROWS_LITERAL -> @throws
+     *    |--WS ->
+     *    |--CLASS_NAME -> SQLException
+     *    |--WS ->
+     *    `--DESCRIPTION -> DESCRIPTION
+     *        `--TEXT -> if query is not correct
      * }</pre>
      *
      * @see
@@ -489,10 +489,15 @@ public final class JavadocTokenTypes {
 
     /**
      * '@link' literal in {&#64;link} Javadoc inline tag.
+     *
      * <p>Such Javadoc inline tag can have one argument - {@link #REFERENCE}</p>
+     *
      * <p><b>Example:</b></p>
+     *
      * <pre><code>{&#64;link org.apache.utils.Lists.Comparator#compare(Object)}</code></pre>
+     *
      * <p><b>Tree:</b></p>
+     *
      * <pre>
      * <code> |--JAVADOC_INLINE_TAG[1x0] :
      *               [{&#64;link org.apache.utils.Lists.Comparator#compare(Object)}]
