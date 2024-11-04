@@ -85,7 +85,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.issue.pull_request.url }}
-          MAIN_REPO_FULL_NAME: 'checkstyle/checkstyle'
         run: |
           PR_INFO="$(curl --fail-with-body -s -H "Authorization: token $GITHUB_TOKEN" "$PR_URL")"
           BRANCH="$(echo "$PR_INFO" | jq -r .head.ref)"
@@ -109,21 +108,15 @@ jobs:
           repository: checkstyle/checkstyle
           path: .ci-temp/checkstyle
 
-      - name: Setup Git remotes and check out PR branch
+      - name: Setup Git remotes
         run: |
           cd .ci-temp/checkstyle
           git remote add upstream https://github.com/checkstyle/checkstyle.git
+          git remote add forked https://github.com/${{ steps.get_pr_details.outputs.fork_repo }}.git
           git fetch upstream
-          # Check if the PR is from a fork
-          if [ "${{ steps.get_pr_details.outputs.fork_repo }}" != "checkstyle/checkstyle" ]; then
-            git remote add forked https://github.com/${{ steps.get_pr_details.outputs.fork_repo }}.git
-            git fetch forked
-            REMOTE_NAME="forked"
-          else
-            REMOTE_NAME="upstream"
-          fi
+          git fetch forked
           git checkout -b ${{ steps.get_pr_details.outputs.branch }} \
-               $REMOTE_NAME/${{ steps.get_pr_details.outputs.branch }}
+               forked/${{ steps.get_pr_details.outputs.branch }}
 
       - name: Save cache
         uses: actions/cache/save@v4
