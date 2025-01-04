@@ -186,6 +186,7 @@ jobs:
     outputs:
       config_link: ${{ steps.set_links.outputs.config_link }}
       projects_link: ${{ steps.set_links.outputs.projects_link }}
+      java_header_link: ${{ steps.set_links.outputs.java_header_link }}
       label: ${{ steps.create_label.outputs.label }}
     steps:
       - name: Restore cache
@@ -204,7 +205,6 @@ jobs:
           CONFIG_BUNDLE=$(echo "$CONFIG_BUNDLE" | tr -d '\n\r' | xargs)
           CONFIG_LINK="$BASE_URL/$CONFIG_BUNDLE/config.xml"
           PROJECTS_LINK="$BASE_URL/$CONFIG_BUNDLE/list-of-projects.yml"
-          # Also update JAVA_HEADER_LINK format
           JAVA_HEADER_LINK="$BASE_URL/$CONFIG_BUNDLE/java.header"
           
           ./.ci/append-to-github-output.sh "config_link" "$CONFIG_LINK"
@@ -422,21 +422,14 @@ jobs:
             || needs.handle_configs_in_pr_description.outputs.projects_link
             || env.DEFAULT_PROJECTS_LINK
             }}
-          # NEW: Add java header link
-          JAVA_HEADER_LINK: ${{
-            format('{0}/{1}/java.header', env.BASE_TEST_CONFIGS_URL, needs.handle_existing_config_bundle.outputs.config_bundle)
-            }}
+          JAVA_HEADER_LINK: ${{ needs.handle_existing_config_bundle.outputs.java_header_link }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p .ci-temp
-          # NEW: Download java.header file if it exists
+          # Download java.header file if it exists
           if curl --output /dev/null --silent --head --fail "$JAVA_HEADER_LINK"; then
             curl -o .ci-temp/java.header "$JAVA_HEADER_LINK"
             echo "Downloaded java.header file"
-          fi
-          if ! ./.ci/diff-report.sh download-files; then
-            ./.ci/append-to-github-output.sh "failed" "true"
-            exit 1
           fi
 
       - name: Cache config files
