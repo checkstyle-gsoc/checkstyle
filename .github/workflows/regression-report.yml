@@ -464,6 +464,7 @@ jobs:
             .ci-temp/*.xml
             .ci-temp/projects.yml
             .ci-temp/projects.properties
+            .ci-temp/java.header
           key: ${{ env.CACHE_KEY }}-config-files
 
       - name: Restore local maven cache
