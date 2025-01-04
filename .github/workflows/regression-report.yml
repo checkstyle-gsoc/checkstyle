@@ -200,10 +200,16 @@ jobs:
         run: |
           BASE_URL="${{ env.BASE_TEST_CONFIGS_URL }}"
           CONFIG_BUNDLE="${{ needs.parse_comment.outputs.config_bundle }}"
+          # Remove any newlines and extra spaces from CONFIG_BUNDLE
+          CONFIG_BUNDLE=$(echo "$CONFIG_BUNDLE" | tr -d '\n\r' | xargs)
           CONFIG_LINK="$BASE_URL/$CONFIG_BUNDLE/config.xml"
           PROJECTS_LINK="$BASE_URL/$CONFIG_BUNDLE/list-of-projects.yml"
+          # Also update JAVA_HEADER_LINK format
+          JAVA_HEADER_LINK="$BASE_URL/$CONFIG_BUNDLE/java.header"
+          
           ./.ci/append-to-github-output.sh "config_link" "$CONFIG_LINK"
           ./.ci/append-to-github-output.sh "projects_link" "$PROJECTS_LINK"
+          ./.ci/append-to-github-output.sh "java_header_link" "$JAVA_HEADER_LINK"
 
       - name: Create label
         id: create_label
