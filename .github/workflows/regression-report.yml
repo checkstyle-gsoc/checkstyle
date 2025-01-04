@@ -402,24 +402,24 @@ jobs:
           DIFF_CONFIG_LINK: ${{
             needs.handle_existing_config_bundle.outputs.config_link
             || needs.handle_configs_in_pr_description.outputs.config_link
-            }}
+          }}
           PATCH_CONFIG_LINK: ${{
             needs.handle_configs_in_pr_description.outputs.patch_config_link
             || ''
-            }}
+          }}
           NEW_MODULE_CONFIG_LINK: ${{
             needs.handle_configs_in_pr_description.outputs.new_module_config_link
             || ''
-            }}
+          }}
           DIFF_PROJECTS_LINK: ${{
             needs.handle_existing_config_bundle.outputs.projects_link
             || needs.handle_configs_in_pr_description.outputs.projects_link
             || env.DEFAULT_PROJECTS_LINK
-            }}
+          }}
           # NEW: Add java header link
           JAVA_HEADER_LINK: ${{
             format('{0}/{1}/java.header', env.BASE_TEST_CONFIGS_URL, needs.handle_existing_config_bundle.outputs.config_bundle)
-            }}
+          }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p .ci-temp
@@ -579,8 +579,7 @@ jobs:
 
           # Paths to the JAR files
           DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
-          PATCH_DIFF_TOOL_JAR="patch-diff-report-tool-\
-          ${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar"
+          PATCH_DIFF_TOOL_JAR="patch-diff-report-tool-${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar"
 
           # NEW: Modified DiffTool commands to include config folder
           if [ -f "$NEW_MODULE_CONFIG" ]; then
@@ -648,9 +647,9 @@ jobs:
       make_report ]
     if: always()
       && (needs.make_report.result == 'failure'
-      || needs.make_report.outputs.message != ''
-      || needs.download_configs.result == 'failure'
-      || needs.handle_generated_config_bundle.result == 'failure')
+          || needs.make_report.outputs.message != ''
+          || needs.download_configs.result == 'failure'
+          || needs.handle_generated_config_bundle.result == 'failure')
     steps:
       - name: Restore cache
         uses: actions/cache/restore@v4
@@ -709,7 +708,6 @@ jobs:
             } > .ci-temp/message
           else
             echo "$MSG" > .ci-temp/message
-          fi
 
       - name: Set message
         id: out
