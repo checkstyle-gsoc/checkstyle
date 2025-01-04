@@ -24,6 +24,7 @@ env:
   PATCH_DIFF_TOOL_VERSION: "0.1-SNAPSHOT"
   CACHE_KEY: "regression-report-${{ github.sha }}-${{ github.event.comment.id }}"
   GENERATED_CONFIGS_PATH: generated_configs
+  JAVA_HEADER_FILE: "${{ github.workspace }}/.ci-temp/java.header"
 
 on:
   issue_comment:
@@ -415,9 +416,18 @@ jobs:
             || needs.handle_configs_in_pr_description.outputs.projects_link
             || env.DEFAULT_PROJECTS_LINK
             }}
+          # NEW: Add java header link
+          JAVA_HEADER_LINK: ${{
+            format('{0}/{1}/java.header', env.BASE_TEST_CONFIGS_URL, needs.handle_existing_config_bundle.outputs.config_bundle)
+            }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p .ci-temp
+          # NEW: Download java.header file if it exists
+          if curl --output /dev/null --silent --head --fail "$JAVA_HEADER_LINK"; then
+            curl -o .ci-temp/java.header "$JAVA_HEADER_LINK"
+            echo "Downloaded java.header file"
+          fi
           if ! ./.ci/diff-report.sh download-files; then
             ./.ci/append-to-github-output.sh "failed" "true"
             exit 1
@@ -430,6 +440,7 @@ jobs:
             .ci-temp/*.xml
             .ci-temp/projects.yml
             .ci-temp/projects.properties
+            .ci-temp/java.header
           key: ${{ env.CACHE_KEY }}-config-files
 
   make_report:
@@ -543,7 +554,6 @@ jobs:
       - name: Generate report
         run: |
           cd .ci-temp
-          bash
           PR_BRANCH="${{ needs.checkout_and_cache.outputs.pr_branch }}"
           REPO="${{ github.workspace }}/.ci-temp/checkstyle"
           BASE_BRANCH="upstream/master"
@@ -553,6 +563,8 @@ jobs:
           DIFF_CONFIG="${{ github.workspace }}/.ci-temp/diff_config.xml"
           PATCH_CONFIG="${{ github.workspace }}/.ci-temp/patch_config.xml"
           NEW_MODULE_CONFIG="${{ github.workspace }}/.ci-temp/new_module_config.xml"
+          # NEW: Add config folder path
+          CONFIG_FOLDER="${{ github.workspace }}/.ci-temp"
 
           # Determine the projects file path
           if [ -f "${{ github.workspace }}/.ci-temp/projects.yml" ]; then
@@ -569,22 +581,22 @@ jobs:
           PATCH_DIFF_TOOL_JAR="patch-diff-report-tool-\
           ${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar"
 
-          # Run DiffTool with appropriate arguments
+          # NEW: Modified DiffTool commands to include config folder
           if [ -f "$NEW_MODULE_CONFIG" ]; then
             echo "Generating report for new module"
             java -jar "$DIFFTOOL_JAR" -r "$REPO" -p "$PR_BRANCH" -pc "$NEW_MODULE_CONFIG" \
-              -m single -l "$PROJECTS_FILE" -xm "-Dcheckstyle.failsOnError=false" \
+              -m single -l "$PROJECTS_FILE" -xm "-Dcheckstyle.config.folder=$CONFIG_FOLDER" \
               --allowExcludes --diffToolJarPath "$PATCH_DIFF_TOOL_JAR"
           elif [ -f "$PATCH_CONFIG" ]; then
             echo "Generating report with patch config"
             java -jar "$DIFFTOOL_JAR" -r "$REPO" -b "$BASE_BRANCH" \
               -p "$PR_BRANCH" -bc "$DIFF_CONFIG" \
-              -pc "$PATCH_CONFIG" -l "$PROJECTS_FILE" -xm "-Dcheckstyle.failsOnError=false" \
+              -pc "$PATCH_CONFIG" -l "$PROJECTS_FILE" -xm "-Dcheckstyle.config.folder=$CONFIG_FOLDER" \
               --allowExcludes --diffToolJarPath "$PATCH_DIFF_TOOL_JAR"
           else
             echo "Generating standard diff report"
             java -jar "$DIFFTOOL_JAR" -r "$REPO" -b "$BASE_BRANCH" -p "$PR_BRANCH" \
-              -c "$DIFF_CONFIG" -l "$PROJECTS_FILE" -xm "-Dcheckstyle.failsOnError=false" \
+              -c "$DIFF_CONFIG" -l "$PROJECTS_FILE" -xm "-Dcheckstyle.config.folder=$CONFIG_FOLDER" \
               --allowExcludes --diffToolJarPath "$PATCH_DIFF_TOOL_JAR"
           fi
 
@@ -635,9 +647,9 @@ jobs:
       make_report ]
     if: always()
       && (needs.make_report.result == 'failure'
-          || needs.make_report.outputs.message != ''
-          || needs.download_configs.result == 'failure'
-          || needs.handle_generated_config_bundle.result == 'failure')
+      || needs.make_report.outputs.message != ''
+      || needs.download_configs.result == 'failure'
+      || needs.handle_generated_config_bundle.result == 'failure')
     steps:
       - name: Restore cache
         uses: actions/cache/restore@v4
