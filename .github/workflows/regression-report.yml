@@ -474,10 +474,13 @@ jobs:
       - name: Download DiffTool JAR
         uses: robinraju/release-downloader@v1.8
         with:
-          repository: "checkstyle/test-configs"
-          tag: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}"
-          fileName: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
-          out-file-path: ".ci-temp"
+          # Change the repository to your fork
+          repository: relentless-pursuit/test-configs
+          tag: diff-java-tool-1.0-SNAPSHOT-all
+          fileName: diff-java-tool-1.0-SNAPSHOT-all.jar
+          out-file-path: .ci-temp
+          token: ${{ secrets.GITHUB_TOKEN }}
+
 
       - name: Download patch-diff-report-tool JAR
         uses: robinraju/release-downloader@v1.8
