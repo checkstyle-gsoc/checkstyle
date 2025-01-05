@@ -397,7 +397,8 @@ jobs:
 
       - name: Download URL-based Config and Project File
         id: download_files
-        if: needs.handle_existing_config_bundle.result == 'success' || needs.handle_configs_in_pr_description.result == 'success'
+        if: needs.handle_existing_config_bundle.result == 'success'
+            || needs.handle_configs_in_pr_description.result == 'success'
         env:
           DIFF_CONFIG_LINK: ${{ 
             needs.handle_existing_config_bundle.outputs.config_link
