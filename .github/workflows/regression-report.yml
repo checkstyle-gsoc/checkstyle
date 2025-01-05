@@ -396,30 +396,14 @@ jobs:
 
       - name: Download URL-based Config and Project File
         id: download_files
-        if: needs.handle_existing_config_bundle.result == 'success'
-          || needs.handle_configs_in_pr_description.result == 'success'
+        if: needs.handle_existing_config_bundle.result == 'success' || needs.handle_configs_in_pr_description.result == 'success'
         env:
-          DIFF_CONFIG_LINK: ${{
-            needs.handle_existing_config_bundle.outputs.config_link
-            || needs.handle_configs_in_pr_description.outputs.config_link
-          }}
-          PATCH_CONFIG_LINK: ${{
-            needs.handle_configs_in_pr_description.outputs.patch_config_link
-            || ''
-          }}
-          NEW_MODULE_CONFIG_LINK: ${{
-            needs.handle_configs_in_pr_description.outputs.new_module_config_link
-            || ''
-          }}
-          DIFF_PROJECTS_LINK: ${{
-            needs.handle_existing_config_bundle.outputs.projects_link
+          DIFF_CONFIG_LINK: ${{ needs.handle_existing_config_bundle.outputs.config_link || needs.handle_configs_in_pr_description.outputs.config_link }}
+          PATCH_CONFIG_LINK: ${{ needs.handle_configs_in_pr_description.outputs.patch_config_link || '' }}
+          NEW_MODULE_CONFIG_LINK: ${{ needs.handle_configs_in_pr_description.outputs.new_module_config_link || '' }}
+          DIFF_PROJECTS_LINK: ${{ needs.handle_existing_config_bundle.outputs.projects_link
             || needs.handle_configs_in_pr_description.outputs.projects_link
-            || env.DEFAULT_PROJECTS_LINK
-          }}
-          # NEW: Add java header link
-          JAVA_HEADER_LINK: ${{
-            format('{0}/{1}/java.header', env.BASE_TEST_CONFIGS_URL, needs.handle_existing_config_bundle.outputs.config_bundle)
-          }}
+            || env.DEFAULT_PROJECTS_LINK }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p .ci-temp
