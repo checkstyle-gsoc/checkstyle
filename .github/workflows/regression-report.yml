@@ -24,6 +24,7 @@ env:
   PATCH_DIFF_TOOL_VERSION: "0.1-SNAPSHOT"
   CACHE_KEY: "regression-report-${{ github.sha }}-${{ github.event.comment.id }}"
   GENERATED_CONFIGS_PATH: generated_configs
+  # Default location for java.header in case we do not pass another location
   JAVA_HEADER_FILE: "${{ github.workspace }}/.ci-temp/java.header"
 
 on:
@@ -136,7 +137,7 @@ jobs:
       - name: React to comment
         uses: actions/github-script@v7
         with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             github.rest.reactions.createForIssueComment({
               owner: context.repo.owner,
@@ -398,20 +399,33 @@ jobs:
         id: download_files
         if: needs.handle_existing_config_bundle.result == 'success' || needs.handle_configs_in_pr_description.result == 'success'
         env:
-          DIFF_CONFIG_LINK: ${{ needs.handle_existing_config_bundle.outputs.config_link || needs.handle_configs_in_pr_description.outputs.config_link }}
-          PATCH_CONFIG_LINK: ${{ needs.handle_configs_in_pr_description.outputs.patch_config_link || '' }}
-          NEW_MODULE_CONFIG_LINK: ${{ needs.handle_configs_in_pr_description.outputs.new_module_config_link || '' }}
-          DIFF_PROJECTS_LINK: ${{ needs.handle_existing_config_bundle.outputs.projects_link
+          DIFF_CONFIG_LINK: ${{ 
+            needs.handle_existing_config_bundle.outputs.config_link
+            || needs.handle_configs_in_pr_description.outputs.config_link
+          }}
+          PATCH_CONFIG_LINK: ${{ 
+            needs.handle_configs_in_pr_description.outputs.patch_config_link
+            || ''
+          }}
+          NEW_MODULE_CONFIG_LINK: ${{ 
+            needs.handle_configs_in_pr_description.outputs.new_module_config_link
+            || ''
+          }}
+          DIFF_PROJECTS_LINK: ${{ 
+            needs.handle_existing_config_bundle.outputs.projects_link
             || needs.handle_configs_in_pr_description.outputs.projects_link
-            || env.DEFAULT_PROJECTS_LINK }}
+            || env.DEFAULT_PROJECTS_LINK
+          }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p .ci-temp
-          # NEW: Download java.header file if it exists
-          if curl --output /dev/null --silent --head --fail "$JAVA_HEADER_LINK"; then
-            curl -o .ci-temp/java.header "$JAVA_HEADER_LINK"
-            echo "Downloaded java.header file"
-          fi
+          # NEW: If you have a java.header file stored in your config bundle, you might download it similarly.
+          # E.g. if there's a known URL for it, or if your environment variable is set:
+          # if curl --output /dev/null --silent --head --fail "$JAVA_HEADER_LINK"; then
+          #   curl -o .ci-temp/java.header "$JAVA_HEADER_LINK"
+          #   echo "Downloaded java.header file"
+          # fi
+
           if ! ./.ci/diff-report.sh download-files; then
             ./.ci/append-to-github-output.sh "failed" "true"
             exit 1
@@ -536,6 +550,10 @@ jobs:
           fi
           echo "-----------------------------------"
 
+      # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      # KEY CHANGE: Notice we add "-Dconfig.folder=$CONFIG_FOLDER" alongside
+      # "-Dcheckstyle.failsOnError=false" in the -xm param.
+      # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       - name: Generate report
         run: |
           cd .ci-temp
@@ -548,7 +566,7 @@ jobs:
           DIFF_CONFIG="${{ github.workspace }}/.ci-temp/diff_config.xml"
           PATCH_CONFIG="${{ github.workspace }}/.ci-temp/patch_config.xml"
           NEW_MODULE_CONFIG="${{ github.workspace }}/.ci-temp/new_module_config.xml"
-          # NEW: Add config folder path
+          # Add config folder path
           CONFIG_FOLDER="${{ github.workspace }}/.ci-temp"
 
           # Determine the projects file path
@@ -565,23 +583,34 @@ jobs:
           DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
           PATCH_DIFF_TOOL_JAR="patch-diff-report-tool-${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar"
 
-          # NEW: Modified DiffTool commands to include config folder
           if [ -f "$NEW_MODULE_CONFIG" ]; then
             echo "Generating report for new module"
             java -jar "$DIFFTOOL_JAR" -r "$REPO" -p "$PR_BRANCH" -pc "$NEW_MODULE_CONFIG" \
-              -m single -l "$PROJECTS_FILE" -xm "-Dconfig.folder=$CONFIG_FOLDER" \
-              --allowExcludes --diffToolJarPath "$PATCH_DIFF_TOOL_JAR"
+              -m single \
+              -l "$PROJECTS_FILE" \
+              -xm "-Dcheckstyle.failsOnError=false -Dconfig.folder=$CONFIG_FOLDER" \
+              --allowExcludes \
+              --diffToolJarPath "$PATCH_DIFF_TOOL_JAR"
+
           elif [ -f "$PATCH_CONFIG" ]; then
             echo "Generating report with patch config"
             java -jar "$DIFFTOOL_JAR" -r "$REPO" -b "$BASE_BRANCH" \
-              -p "$PR_BRANCH" -bc "$DIFF_CONFIG" \
-              -pc "$PATCH_CONFIG" -l "$PROJECTS_FILE" -xm "-Dconfig.folder=$CONFIG_FOLDER" \
-              --allowExcludes --diffToolJarPath "$PATCH_DIFF_TOOL_JAR"
+              -p "$PR_BRANCH" \
+              -bc "$DIFF_CONFIG" \
+              -pc "$PATCH_CONFIG" \
+              -l "$PROJECTS_FILE" \
+              -xm "-Dcheckstyle.failsOnError=false -Dconfig.folder=$CONFIG_FOLDER" \
+              --allowExcludes \
+              --diffToolJarPath "$PATCH_DIFF_TOOL_JAR"
+
           else
             echo "Generating standard diff report"
             java -jar "$DIFFTOOL_JAR" -r "$REPO" -b "$BASE_BRANCH" -p "$PR_BRANCH" \
-              -c "$DIFF_CONFIG" -l "$PROJECTS_FILE" -xm "-Dconfig.folder=$CONFIG_FOLDER" \
-              --allowExcludes --diffToolJarPath "$PATCH_DIFF_TOOL_JAR"
+              -c "$DIFF_CONFIG" \
+              -l "$PROJECTS_FILE" \
+              -xm "-Dcheckstyle.failsOnError=false -Dconfig.folder=$CONFIG_FOLDER" \
+              --allowExcludes \
+              --diffToolJarPath "$PATCH_DIFF_TOOL_JAR"
           fi
 
       - name: Copy Report to AWS S3 Bucket
@@ -589,7 +618,6 @@ jobs:
           LABEL: ${{ needs.download_configs.outputs.report_label }}
           COMMIT_SHA: ${{ needs.checkout_and_cache.outputs.commit_sha }}
         run: |
-          bash
           TIME=$(date +%Y%H%M%S)
           FOLDER="${COMMIT_SHA}_$TIME"
           DIFF="./.ci-temp/reports/diff"
@@ -628,7 +656,8 @@ jobs:
     needs: [
       handle_generated_config_bundle,
       download_configs,
-      make_report ]
+      make_report
+    ]
     if: always()
       && (needs.make_report.result == 'failure'
           || needs.make_report.outputs.message != ''
