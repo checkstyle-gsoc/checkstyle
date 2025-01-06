@@ -504,6 +504,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Ensure .ci-temp/config directory
+        run: mkdir -p .ci-temp/config
+
+      - name: Copy existing java.header into .ci-temp/config
+        run: |
+          cp .ci-temp/checkstyle/config/java.header .ci-temp/config/java.header
+          
       - name: Print config.xml
         run: |
           echo "Contents of config.xml:"
