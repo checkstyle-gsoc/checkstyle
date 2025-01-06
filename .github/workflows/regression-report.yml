@@ -52,6 +52,7 @@ jobs:
                          'Github, generate report by config from')
           ||  startsWith(github.event.comment.body,
                          'GitHub, generate report by config from'))
+
     runs-on: ubuntu-latest
     steps:
       - name: Check PR status
@@ -66,6 +67,7 @@ jobs:
             echo "PR is not active"
             exit 1
           fi
+
   checkout_and_cache:
     runs-on: ubuntu-latest
     needs: [ check_pr_status ]
@@ -93,6 +95,7 @@ jobs:
             echo "fork_repo=$FORK_REPO"
             echo "commit_sha=$COMMIT_SHA"
           } >> "$GITHUB_OUTPUT"
+
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
@@ -114,6 +117,7 @@ jobs:
           git fetch forked
           git checkout -b ${{ steps.get_pr_details.outputs.branch }} \
                forked/${{ steps.get_pr_details.outputs.branch }}
+
       - name: Save cache
         uses: actions/cache/save@v4
         with:
@@ -139,6 +143,7 @@ jobs:
               comment_id: context.payload.comment.id,
               content: 'rocket'
             })
+
       - name: Restore cache
         uses: actions/cache/restore@v4
         with:
@@ -154,20 +159,25 @@ jobs:
           PATTERN_FOR_DESCRIPTION='^Git[Hh]ub, generate report for configs in PR description$'
           PATTERN_FOR='^Git[Hh]ub, generate report for'
           PATTERN_BY_CONFIG_FROM='^Git[Hh]ub, generate report by config from'
+
           if [[ "$COMMENT_BODY" =~ $PATTERN_FOR_DESCRIPTION ]]; then
             ./.ci/append-to-github-output.sh "mode" "configs_in_pr_description"
+
           elif [[ "$COMMENT_BODY" =~ $PATTERN_FOR ]]; then
             ./.ci/append-to-github-output.sh "mode" "existing_config_bundle"
             CONFIG_BUNDLE=$(echo "$COMMENT_BODY" | sed -E "s/$PATTERN_FOR //g")
             ./.ci/append-to-github-output.sh "config_bundle" "$CONFIG_BUNDLE"
+
           elif [[ "$COMMENT_BODY" =~ $PATTERN_BY_CONFIG_FROM ]]; then
             ./.ci/append-to-github-output.sh "mode" "generated_config_bundle"
             INPUT_FILE=$(echo "$COMMENT_BODY" | sed -E "s/$PATTERN_BY_CONFIG_FROM //g")
             ./.ci/append-to-github-output.sh "input_file" "$INPUT_FILE"
+
           else
             echo "No recognized pattern found in '$COMMENT_BODY'."
             exit 1
           fi
+
   handle_existing_config_bundle:
     needs: [ parse_comment, checkout_and_cache ]
     if: needs.parse_comment.outputs.mode == 'existing_config_bundle'
@@ -193,12 +203,14 @@ jobs:
           PROJECTS_LINK="$BASE_URL/$CONFIG_BUNDLE/list-of-projects.yml"
           ./.ci/append-to-github-output.sh "config_link" "$CONFIG_LINK"
           ./.ci/append-to-github-output.sh "projects_link" "$PROJECTS_LINK"
+
       - name: Create label
         id: create_label
         run: |
           CONFIG_BUNDLE="${{ needs.parse_comment.outputs.config_bundle }}"
           LABEL="Report for $CONFIG_BUNDLE"
           ./.ci/append-to-github-output.sh "label" "$LABEL"
+
   handle_generated_config_bundle:
     needs: [ parse_comment, checkout_and_cache ]
     if: needs.parse_comment.outputs.mode == 'generated_config_bundle'
@@ -220,7 +232,9 @@ jobs:
         run: |
           INPUT_FILE="${{ needs.parse_comment.outputs.input_file }}"
           WORKSPACE="${{ github.workspace }}"
+
           FOUND_FILES=$(find "$WORKSPACE/src" -type f -path "*$INPUT_FILE")
+
           if [ "$(echo "$FOUND_FILES" | wc -l)" -gt 1 ]; then
             echo "Error: Multiple matching files found"
             exit 1
@@ -228,8 +242,10 @@ jobs:
             echo "Error: Could not find input file"
             exit 1
           fi
+
           FOUND_FILE="$FOUND_FILES"
           ./.ci/append-to-github-output.sh "input_file" "$FOUND_FILE"
+
       - name: Download Extractor JAR
         uses: robinraju/release-downloader@v1.8
         with:
@@ -251,24 +267,31 @@ jobs:
           FOUND_FILE="${{ steps.find_input_file.outputs.input_file }}"
           OUTPUT_DIR="${{ env.GENERATED_CONFIGS_PATH }}"
           mkdir -p "$OUTPUT_DIR"
+
           echo "Using input file: $FOUND_FILE"
+
           # Generate a unique name for the config file
           CONFIG_FILE_NAME=$(basename "$FOUND_FILE" .java)_config.xml
           CONFIG_FILE_PATH="$OUTPUT_DIR/$CONFIG_FILE_NAME"
+
           # Generate a name for the projects YAML file
           PROJECT_FILE_PATH="$OUTPUT_DIR/projects.yml"
+
           # Run the extractor
           java -jar extractor-all-${{env.EXTRACTOR_VERSION}}.jar \
             "$WORKSPACE" \
             --input-file "$FOUND_FILE" \
             "$CONFIG_FILE_PATH" \
             "$PROJECT_FILE_PATH"
+
           # Set the config and project file paths
           ./.ci/append-to-github-output.sh "config_link" "$CONFIG_FILE_PATH"
           ./.ci/append-to-github-output.sh "projects_link" "$PROJECT_FILE_PATH"
+
           # Print the contents of the files to the logs
           echo "Contents of CONFIG_FILE_PATH:"
           cat "$CONFIG_FILE_PATH"
+
       - name: Cache Generated Config and Project Files
         uses: actions/cache@v4
         with:
@@ -282,6 +305,7 @@ jobs:
           FILENAME=$(basename "$INPUT_FILE")
           LABEL="Generated config for $FILENAME"
           ./.ci/append-to-github-output.sh "label" "$LABEL"
+
   handle_configs_in_pr_description:
     needs: [ parse_comment, checkout_and_cache ]
     if: needs.parse_comment.outputs.mode == 'configs_in_pr_description'
@@ -310,10 +334,12 @@ jobs:
           # convert windows line endings to unix in event text
           echo "$ISSUE_BODY" > .ci-temp/windows.txt
           tr -d '\15\32' < .ci-temp/windows.txt > .ci-temp/text
+
       - name: Parsing content of PR description
         id: parse_description
         run: |
           ./.ci/diff-report.sh parse-pr-description-text
+
   download_configs:
     needs: [
       parse_comment,
@@ -366,6 +392,7 @@ jobs:
           else
             cp "$DIFF_PROJECTS_LINK" .ci-temp/projects.yml
           fi
+
       - name: Download URL-based Config and Project File
         id: download_files
         if: needs.handle_existing_config_bundle.result == 'success'
@@ -393,35 +420,22 @@ jobs:
         run: |
           mkdir -p .ci-temp
           mkdir -p "$CONFIG_FOLDER"
-          
-          # Download main config file
           if ! ./.ci/diff-report.sh download-files; then
             ./.ci/append-to-github-output.sh "failed" "true"
             exit 1
           fi
-          
+
           # Extract and download additional config files
           if [ -f ".ci-temp/diff_config.xml" ]; then
-            echo "Contents of main config file:"
-            echo "----------------------------"
-            cat .ci-temp/diff_config.xml
-            echo "----------------------------"
-            
             # Copy java.header from checkstyle's config directory
-            echo "Copying java.header from checkstyle config directory"
             cp "${{ github.workspace }}/.ci-temp/checkstyle/config/java.header" "$CONFIG_FOLDER/java.header"
-            
+
             if [ $? -ne 0 ]; then
               echo "Failed to copy java.header"
               exit 1
             fi
-            
-            echo "Contents of copied file java.header:"
-            echo "----------------------------"
-            cat "$CONFIG_FOLDER/java.header"
-            echo "----------------------------"
           fi
-    
+
       - name: Cache config files
         uses: actions/cache@v4
         with:
@@ -459,7 +473,7 @@ jobs:
         with:
           path: ~/.m2/repository
           key: checkstyle-maven-cache-${{ hashFiles('**/pom.xml') }}
-          
+
       - name: Download DiffTool JAR
         uses: robinraju/release-downloader@v1.8
         with:
@@ -490,14 +504,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Ensure .ci-temp/config directory
-        run: mkdir -p .ci-temp/config
-
-      - name: Copy existing java.header into .ci-temp/config
-        run: |
-          # Our checkstyle repo was cloned into .ci-temp/checkstyle
-          # And inside that, there's a `config/` folder containing java.header
-          cp .ci-temp/checkstyle/config/java.header .ci-temp/config/java.header
       - name: Print config.xml
         run: |
           echo "Contents of config.xml:"
@@ -508,6 +514,7 @@ jobs:
             echo "diff_config.xml not found"
           fi
           echo "-------------------------"
+
       - name: Print projects file
         run: |
           if [ -f .ci-temp/projects.yml ]; then
@@ -523,6 +530,7 @@ jobs:
           else
             echo "No projects file found"
           fi
+
       - name: Print patch_config.xml
         run: |
           echo "Contents of patch_config.xml:"
@@ -533,6 +541,7 @@ jobs:
             echo "patch_config.xml not found"
           fi
           echo "-----------------------------"
+
       - name: Print new_module_config.xml
         run: |
           echo "Contents of new_module_config.xml:"
@@ -543,23 +552,21 @@ jobs:
             echo "new_module_config.xml not found"
           fi
           echo "-----------------------------------"
+
       - name: Generate report
         run: |
           cd .ci-temp
-          echo "Current directory: $(pwd)"
-          echo "Config folder contents:"
-          ls -la config/
-          echo "java.header contents:"
-          cat config/java.header
           bash
           PR_BRANCH="${{ needs.checkout_and_cache.outputs.pr_branch }}"
           REPO="${{ github.workspace }}/.ci-temp/checkstyle"
           BASE_BRANCH="upstream/master"
           export MAVEN_OPTS="-Xmx5g"
+
           # Paths to config files
           DIFF_CONFIG="${{ github.workspace }}/.ci-temp/diff_config.xml"
           PATCH_CONFIG="${{ github.workspace }}/.ci-temp/patch_config.xml"
           NEW_MODULE_CONFIG="${{ github.workspace }}/.ci-temp/new_module_config.xml"
+
           # Determine the projects file path
           if [ -f "${{ github.workspace }}/.ci-temp/projects.yml" ]; then
             PROJECTS_FILE="${{ github.workspace }}/.ci-temp/projects.yml"
@@ -569,9 +576,12 @@ jobs:
             echo "Error: Projects file not found."
             exit 1
           fi
+
           # Paths to the JAR files
           DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
-          PATCH_DIFF_TOOL_JAR="patch-diff-report-tool-${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar"
+          PATCH_DIFF_TOOL_JAR="patch-diff-report-tool-\
+          ${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar"
+
           # Run DiffTool with appropriate arguments
           if [ -f "$NEW_MODULE_CONFIG" ]; then
             echo "Generating report for new module"
@@ -608,6 +618,7 @@ jobs:
               --allowExcludes \
               --diffToolJarPath "$PATCH_DIFF_TOOL_JAR"
           fi
+
       - name: Copy Report to AWS S3 Bucket
         env:
           LABEL: ${{ needs.download_configs.outputs.report_label }}
@@ -623,10 +634,12 @@ jobs:
             echo "$LABEL: " > .ci-temp/message
           fi
           echo "$LINK/$FOLDER/reports/diff/index.html" >> .ci-temp/message
+
       - name: Set output
         id: out
         run: |
           ./.ci/append-to-github-output.sh "message" "$(cat .ci-temp/message)"
+
   add_sad_Emoji:
     needs: [ check_pr_status, parse_comment, make_report ]
     if: cancelled()
@@ -643,6 +656,7 @@ jobs:
               comment_id: context.payload.comment.id,
               content: 'confused'
             });
+
   # should be always last step
   send_message:
     runs-on: ubuntu-latest
@@ -714,10 +728,12 @@ jobs:
           else
             echo "$MSG" > .ci-temp/message
           fi
+
       - name: Set message
         id: out
         run: |
           ./.ci/append-to-github-output.sh "message" "$(cat .ci-temp/message)"
+
       - name: Comment PR
         uses: peter-evans/create-or-update-comment@v4
         with:
