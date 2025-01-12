@@ -457,7 +457,6 @@ jobs:
             .ci-temp/*.xml
             .ci-temp/projects.yml
             .ci-temp/projects.properties
-            .ci-temp/config/*
           key: ${{ env.CACHE_KEY }}-config-files
 
   make_report:
