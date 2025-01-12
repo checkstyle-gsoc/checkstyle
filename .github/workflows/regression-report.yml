@@ -420,21 +420,35 @@ jobs:
         run: |
           mkdir -p .ci-temp
           mkdir -p "$CONFIG_FOLDER"
+          
+          # Download main config files
           if ! ./.ci/diff-report.sh download-files; then
             ./.ci/append-to-github-output.sh "failed" "true"
             exit 1
           fi
-
-          # Extract and download additional config files
+      
+          # Handle additional configuration files
           if [ -f ".ci-temp/diff_config.xml" ]; then
-            # Copy java.header from checkstyle's config directory
-            cp "${{ github.workspace }}/.ci-temp/checkstyle/config/java.header" "$CONFIG_FOLDER/java.header"
-
-            if [ $? -ne 0 ]; then
-              echo "Failed to copy java.header"
-              exit 1
+            # Try to download java.header
+            if curl --fail-with-body -s -L -o "$CONFIG_FOLDER/java.header" \
+              "https://raw.githubusercontent.com/checkstyle/test-configs/main/Header/Example2/java.header"; then
+              echo "Successfully downloaded java.header"
+            else
+              echo "Failed to download java.header, continuing workflow"
+            fi
+      
+            # Try to download extended-config.xml
+            if curl --fail-with-body -s -L -o "$CONFIG_FOLDER/extended-config.xml" \
+              "https://raw.githubusercontent.com/checkstyle/test-configs/main/Header/Example2/extended-config.xml"; then
+              echo "Successfully downloaded extended-config.xml"
+            else
+              echo "Failed to download extended-config.xml, continuing workflow"
             fi
           fi
+      
+          # Verify downloaded files for debugging
+          echo "Contents of CONFIG_FOLDER:"
+          ls -la "$CONFIG_FOLDER"
 
       - name: Cache config files
         uses: actions/cache@v4
@@ -443,6 +457,7 @@ jobs:
             .ci-temp/*.xml
             .ci-temp/projects.yml
             .ci-temp/projects.properties
+            .ci-temp/config/*
           key: ${{ env.CACHE_KEY }}-config-files
 
   make_report:
