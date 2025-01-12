@@ -431,7 +431,7 @@ jobs:
           if [ -f ".ci-temp/diff_config.xml" ]; then
             # Try to download java.header
             if curl --fail-with-body -s -L -o "$CONFIG_FOLDER/java.header" \
-              "https://raw.githubusercontent.com/checkstyle/test-configs/main/Header/Example2/java.header"; then
+              "https://raw.githubusercontent.com/checkstyle/test-configs/refs/heads/main/Header/Example2/config.xml"; then
               echo "Successfully downloaded java.header"
             else
               echo "Failed to download java.header, continuing workflow"
