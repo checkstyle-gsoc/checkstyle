@@ -424,15 +424,23 @@ jobs:
       - name: Attempt to download extra files (e.g. java.header)
         if: always()
         run: |
+          # Print the original DIFF_CONFIG_LINK so we can debug
+          echo "DIFF_CONFIG_LINK is: $DIFF_CONFIG_LINK"
+      
           # Only try if we actually found diff_config.xml
           if [ -f ".ci-temp/diff_config.xml" ]; then
-            
-            # The environment variable DIFF_CONFIG_LINK points to, for example:
-            # https://raw.githubusercontent.com/checkstyle/test-configs/main/Header/Example2/config.xml
-            # We want to remove the "/config.xml" part so we can get:
-            # https://raw.githubusercontent.com/checkstyle/test-configs/main/Header/Example2
-            CONFIG_FOLDER_URL="${DIFF_CONFIG_LINK%/*}"
-            cat "${CONFIG_FOLDER_URL}"
+      
+            # If DIFF_CONFIG_LINK has something like
+            #   https://raw.githubusercontent.com/checkstyle/test-configs/refs/heads/main/Header/Example2/config.xml
+            # we want to remove "/refs/heads" so we get:
+            #   https://raw.githubusercontent.com/checkstyle/test-configs/main/Header/Example2/config.xml
+            FIXED_LINK="$(echo "$DIFF_CONFIG_LINK" | sed 's@/refs/heads@@')"
+      
+            # Now remove "/config.xml" from the end to get just the folder
+            CONFIG_FOLDER_URL="${FIXED_LINK%/*}"
+      
+            # Show the final folder URL
+            echo "CONFIG_FOLDER_URL is: $CONFIG_FOLDER_URL"
       
             echo "Attempting to download 'java.header' from ${CONFIG_FOLDER_URL}/java.header ..."
             curl -fSLo ".ci-temp/config/java.header" \
@@ -450,6 +458,7 @@ jobs:
           else
             echo "No diff_config.xml found, skipping extra-file download."
           fi
+
 
       - name: Cache config files
         uses: actions/cache@v4
