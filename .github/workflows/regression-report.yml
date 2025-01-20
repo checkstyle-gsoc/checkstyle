@@ -414,16 +414,17 @@ jobs:
         run: |
           mkdir -p .ci-temp
           mkdir -p "$CONFIG_FOLDER"
-          
+
           if ! ./.ci/diff-report.sh download-files; then
             ./.ci/append-to-github-output.sh "failed" "true"
             exit 1
           fi
-          
+
           if [ -n "$DIFF_CONFIG_LINK" ]; then
             FIXED_LINK="$(echo "$DIFF_CONFIG_LINK" | sed 's@/refs/heads@@')"
             CONFIG_FOLDER_URL="${FIXED_LINK%/*}"
-            curl -fSLo "$CONFIG_FOLDER/java.header" "${CONFIG_FOLDER_URL}/java.header" || true
+            curl --fail-with-body -SLo "$CONFIG_FOLDER/java.header" \
+              "${CONFIG_FOLDER_URL}/java.header" || true
           fi
 
       - name: Cache config files
@@ -500,7 +501,7 @@ jobs:
       - name: Copy existing java.header into .ci-temp/config
         run: |
           cp .ci-temp/checkstyle/config/java.header .ci-temp/config/java.header
-          
+
       - name: Print config.xml
         run: |
           echo "Contents of config.xml:"
@@ -578,6 +579,9 @@ jobs:
           DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
           PATCH_DIFF_TOOL_JAR="patch-diff-report-tool-\
           ${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar"
+          
+          CONFIG_DIR="${{ github.workspace }}/.ci-temp/config"
+          DIFFTOOL_OPTS="-Dcheckstyle.failsOnError=false -Dconfig.folder=${CONFIG_DIR}"
 
           # Run DiffTool with appropriate arguments
           if [ -f "$NEW_MODULE_CONFIG" ]; then
@@ -588,7 +592,7 @@ jobs:
               -pc "$NEW_MODULE_CONFIG" \
               -m single \
               -l "$PROJECTS_FILE" \
-              -xm "-Dcheckstyle.failsOnError=false -Dconfig.folder=${{ github.workspace }}/.ci-temp/config" \
+              -xm "$DIFFTOOL_OPTS" \
               --allowExcludes \
               --diffToolJarPath "$PATCH_DIFF_TOOL_JAR"
           elif [ -f "$PATCH_CONFIG" ]; then
@@ -600,7 +604,7 @@ jobs:
               -bc "$DIFF_CONFIG" \
               -pc "$PATCH_CONFIG" \
               -l "$PROJECTS_FILE" \
-              -xm "-Dcheckstyle.failsOnError=false -Dconfig.folder=${{ github.workspace }}/.ci-temp/config" \
+              -xm "$DIFFTOOL_OPTS" \
               --allowExcludes \
               --diffToolJarPath "$PATCH_DIFF_TOOL_JAR"
           else
@@ -611,7 +615,7 @@ jobs:
               -p "$PR_BRANCH" \
               -c "$DIFF_CONFIG" \
               -l "$PROJECTS_FILE" \
-              -xm "-Dcheckstyle.failsOnError=false -Dconfig.folder=${{ github.workspace }}/.ci-temp/config" \
+              -xm "$DIFFTOOL_OPTS" \
               --allowExcludes \
               --diffToolJarPath "$PATCH_DIFF_TOOL_JAR"
           fi
