@@ -13,8 +13,8 @@
 #####################################################################################
 name: regression-report
 env:
-  AWS_REGION: us-east-2
-  AWS_BUCKET_NAME: "checkstyle-diff-reports"
+  AWS_REGION: ap-south-1
+  AWS_BUCKET_NAME: "chesktyler-reports"
   USER_LOGIN: ${{ github.event.issue.user.login }}
   # yamllint disable-line rule:line-length
   DEFAULT_PROJECTS_LINK: "https://raw.githubusercontent.com/checkstyle/test-configs/main/extractor/src/main/resources/list-of-projects.yml"
@@ -85,6 +85,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.issue.pull_request.url }}
+          MAIN_REPO_FULL_NAME: 'checkstyle/checkstyle'
         run: |
           PR_INFO="$(curl --fail-with-body -s -H "Authorization: token $GITHUB_TOKEN" "$PR_URL")"
           BRANCH="$(echo "$PR_INFO" | jq -r .head.ref)"
@@ -108,15 +109,21 @@ jobs:
           repository: checkstyle/checkstyle
           path: .ci-temp/checkstyle
 
-      - name: Setup Git remotes
+      - name: Setup Git remotes and check out PR branch
         run: |
           cd .ci-temp/checkstyle
           git remote add upstream https://github.com/checkstyle/checkstyle.git
-          git remote add forked https://github.com/${{ steps.get_pr_details.outputs.fork_repo }}.git
           git fetch upstream
-          git fetch forked
+          # Check if the PR is from a fork
+          if [ "${{ steps.get_pr_details.outputs.fork_repo }}" != "checkstyle/checkstyle" ]; then
+            git remote add forked https://github.com/${{ steps.get_pr_details.outputs.fork_repo }}.git
+            git fetch forked
+            REMOTE_NAME="forked"
+          else
+            REMOTE_NAME="upstream"
+          fi
           git checkout -b ${{ steps.get_pr_details.outputs.branch }} \
-               forked/${{ steps.get_pr_details.outputs.branch }}
+               $REMOTE_NAME/${{ steps.get_pr_details.outputs.branch }}
 
       - name: Save cache
         uses: actions/cache/save@v4

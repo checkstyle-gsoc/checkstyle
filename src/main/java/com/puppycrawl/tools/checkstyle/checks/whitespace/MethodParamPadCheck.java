@@ -19,6 +19,9 @@
 
 package com.puppycrawl.tools.checkstyle.checks.whitespace;
 
+
+
+
 import java.util.Locale;
 
 import com.puppycrawl.tools.checkstyle.StatelessCheck;
