@@ -393,7 +393,7 @@ jobs:
             cp "$DIFF_PROJECTS_LINK" .ci-temp/projects.yml
           fi
 
-      - name: Download URL-based Config and Project File
+      - name: Download URL-based Config and Project File + Extra Files
         id: download_files
         if: needs.handle_existing_config_bundle.result == 'success'
           || needs.handle_configs_in_pr_description.result == 'success'
@@ -412,53 +412,42 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CONFIG_FOLDER: ${{ github.workspace }}/.ci-temp/config
         run: |
+          # 1) Make sure .ci-temp and config folder exist
           mkdir -p .ci-temp
           mkdir -p "$CONFIG_FOLDER"
-          
-          # Download main config files (config.xml, list-of-projects.*)
+      
+          # 2) Download main config files (config.xml, list-of-projects.*)
+          echo "Downloading main files from $DIFF_CONFIG_LINK, $DIFF_PROJECTS_LINK"
           if ! ./.ci/diff-report.sh download-files; then
             ./.ci/append-to-github-output.sh "failed" "true"
             exit 1
           fi
-    
-      - name: Attempt to download extra files (e.g. java.header)
-        if: always()
-        run: |
-          # Print the original DIFF_CONFIG_LINK so we can debug
-          echo "DIFF_CONFIG_LINK is: $DIFF_CONFIG_LINK"
       
-          # Only try if we actually found diff_config.xml
-          if [ -f ".ci-temp/diff_config.xml" ]; then
+          # 3) Attempt to fetch additional file(s), e.g. 'java.header'
+          #    Only do this if DIFF_CONFIG_LINK is not empty
+          if [ -n "$DIFF_CONFIG_LINK" ]; then
+            echo "DIFF_CONFIG_LINK is: $DIFF_CONFIG_LINK"
       
-            # If DIFF_CONFIG_LINK has something like
-            #   https://raw.githubusercontent.com/checkstyle/test-configs/refs/heads/main/Header/Example2/config.xml
-            # we want to remove "/refs/heads" so we get:
-            #   https://raw.githubusercontent.com/checkstyle/test-configs/main/Header/Example2/config.xml
+            # If your link might contain "/refs/heads", remove it here:
             FIXED_LINK="$(echo "$DIFF_CONFIG_LINK" | sed 's@/refs/heads@@')"
       
-            # Now remove "/config.xml" from the end to get just the folder
+            # Chop off "/config.xml" => get the folder portion
             CONFIG_FOLDER_URL="${FIXED_LINK%/*}"
       
-            # Show the final folder URL
-            echo "CONFIG_FOLDER_URL is: $CONFIG_FOLDER_URL"
-      
             echo "Attempting to download 'java.header' from ${CONFIG_FOLDER_URL}/java.header ..."
-            curl -fSLo ".ci-temp/config/java.header" \
+            curl -fSLo "$CONFIG_FOLDER/java.header" \
               "${CONFIG_FOLDER_URL}/java.header" \
               || echo "No 'java.header' found there—skipping."
       
-            # Print the contents if the download succeeded
-            if [ -f ".ci-temp/config/java.header" ]; then
-              echo "Contents of .ci-temp/config/java.header:"
-              cat .ci-temp/config/java.header
+            if [ -f "$CONFIG_FOLDER/java.header" ]; then
+              echo "Contents of $CONFIG_FOLDER/java.header:"
+              cat "$CONFIG_FOLDER/java.header"
             else
-              echo "No .ci-temp/config/java.header file to show."
+              echo "No $CONFIG_FOLDER/java.header file to show."
             fi
-      
           else
-            echo "No diff_config.xml found, skipping extra-file download."
+            echo "DIFF_CONFIG_LINK is empty, skipping extra file download."
           fi
-
 
       - name: Cache config files
         uses: actions/cache@v4
