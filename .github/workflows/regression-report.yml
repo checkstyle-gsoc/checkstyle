@@ -412,41 +412,18 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CONFIG_FOLDER: ${{ github.workspace }}/.ci-temp/config
         run: |
-          # 1) Make sure .ci-temp and config folder exist
           mkdir -p .ci-temp
           mkdir -p "$CONFIG_FOLDER"
-      
-          # 2) Download main config files (config.xml, list-of-projects.*)
-          echo "Downloading main files from $DIFF_CONFIG_LINK, $DIFF_PROJECTS_LINK"
+          
           if ! ./.ci/diff-report.sh download-files; then
             ./.ci/append-to-github-output.sh "failed" "true"
             exit 1
           fi
-      
-          # 3) Attempt to fetch additional file(s), e.g. 'java.header'
-          #    Only do this if DIFF_CONFIG_LINK is not empty
+          
           if [ -n "$DIFF_CONFIG_LINK" ]; then
-            echo "DIFF_CONFIG_LINK is: $DIFF_CONFIG_LINK"
-      
-            # If your link might contain "/refs/heads", remove it here:
             FIXED_LINK="$(echo "$DIFF_CONFIG_LINK" | sed 's@/refs/heads@@')"
-      
-            # Chop off "/config.xml" => get the folder portion
             CONFIG_FOLDER_URL="${FIXED_LINK%/*}"
-      
-            echo "Attempting to download 'java.header' from ${CONFIG_FOLDER_URL}/java.header ..."
-            curl -fSLo "$CONFIG_FOLDER/java.header" \
-              "${CONFIG_FOLDER_URL}/java.header" \
-              || echo "No 'java.header' found there—skipping."
-      
-            if [ -f "$CONFIG_FOLDER/java.header" ]; then
-              echo "Contents of $CONFIG_FOLDER/java.header:"
-              cat "$CONFIG_FOLDER/java.header"
-            else
-              echo "No $CONFIG_FOLDER/java.header file to show."
-            fi
-          else
-            echo "DIFF_CONFIG_LINK is empty, skipping extra file download."
+            curl -fSLo "$CONFIG_FOLDER/java.header" "${CONFIG_FOLDER_URL}/java.header" || true
           fi
 
       - name: Cache config files
