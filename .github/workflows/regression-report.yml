@@ -490,9 +490,9 @@ jobs:
       - name: Download DiffTool JAR
         uses: robinraju/release-downloader@v1.8
         with:
-          repository: "checkstyle/test-configs"
-          tag: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}"
-          fileName: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
+          repository: "relentless-pursuit/test-configs"
+          tag: "diff-java-tool-1.0-SNAPSHOT-all"
+          fileName: "diff-java-tool-1.0-SNAPSHOT-all.jar"
           out-file-path: ".ci-temp"
 
       - name: Download patch-diff-report-tool JAR
