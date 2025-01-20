@@ -398,57 +398,57 @@ jobs:
         if: needs.handle_existing_config_bundle.result == 'success'
           || needs.handle_configs_in_pr_description.result == 'success'
         env:
-          DIFF_CONFIG_LINK: ${{
-            needs.handle_existing_config_bundle.outputs.config_link
-            || needs.handle_configs_in_pr_description.outputs.config_link
-            }}
-          PATCH_CONFIG_LINK: ${{
-            needs.handle_configs_in_pr_description.outputs.patch_config_link
-            || ''
-            }}
-          NEW_MODULE_CONFIG_LINK: ${{
-            needs.handle_configs_in_pr_description.outputs.new_module_config_link
-            || ''
-            }}
-          DIFF_PROJECTS_LINK: ${{
-            needs.handle_existing_config_bundle.outputs.projects_link
-            || needs.handle_configs_in_pr_description.outputs.projects_link
-            || env.DEFAULT_PROJECTS_LINK
-            }}
+          DIFF_CONFIG_LINK: >-
+            ${{ needs.handle_existing_config_bundle.outputs.config_link
+                || needs.handle_configs_in_pr_description.outputs.config_link }}
+          PATCH_CONFIG_LINK: >-
+            ${{ needs.handle_configs_in_pr_description.outputs.patch_config_link || '' }}
+          NEW_MODULE_CONFIG_LINK: >-
+            ${{ needs.handle_configs_in_pr_description.outputs.new_module_config_link || '' }}
+          DIFF_PROJECTS_LINK: >-
+            ${{ needs.handle_existing_config_bundle.outputs.projects_link
+                || needs.handle_configs_in_pr_description.outputs.projects_link
+                || env.DEFAULT_PROJECTS_LINK }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CONFIG_FOLDER: ${{ github.workspace }}/.ci-temp/config
         run: |
           mkdir -p .ci-temp
           mkdir -p "$CONFIG_FOLDER"
           
-          # Download main config files
+          # Download main config files (config.xml, list-of-projects.*)
           if ! ./.ci/diff-report.sh download-files; then
             ./.ci/append-to-github-output.sh "failed" "true"
             exit 1
           fi
-      
-          # Handle additional configuration files
+    
+      - name: Attempt to download extra files (e.g. java.header)
+        if: always()
+        run: |
+          # Only try if we actually found diff_config.xml
           if [ -f ".ci-temp/diff_config.xml" ]; then
-            # Try to download java.header
-            if curl --fail-with-body -s -L -o "$CONFIG_FOLDER/java.header" \
-              "https://raw.githubusercontent.com/checkstyle/test-configs/refs/heads/main/Header/Example2/config.xml"; then
-              echo "Successfully downloaded java.header"
+            
+            # The environment variable DIFF_CONFIG_LINK points to, for example:
+            # https://raw.githubusercontent.com/checkstyle/test-configs/main/Header/Example2/config.xml
+            # We want to remove the "/config.xml" part so we can get:
+            # https://raw.githubusercontent.com/checkstyle/test-configs/main/Header/Example2
+            CONFIG_FOLDER_URL="${DIFF_CONFIG_LINK%/*}"
+      
+            echo "Attempting to download 'java.header' from ${CONFIG_FOLDER_URL}/java.header ..."
+            curl -fSLo ".ci-temp/config/java.header" \
+              "${CONFIG_FOLDER_URL}/java.header" \
+              || echo "No 'java.header' found there—skipping."
+      
+            # Print the contents if the download succeeded
+            if [ -f ".ci-temp/config/java.header" ]; then
+              echo "Contents of .ci-temp/config/java.header:"
+              cat .ci-temp/config/java.header
             else
-              echo "Failed to download java.header, continuing workflow"
+              echo "No .ci-temp/config/java.header file to show."
             fi
       
-            # Try to download extended-config.xml
-            if curl --fail-with-body -s -L -o "$CONFIG_FOLDER/extended-config.xml" \
-              "https://raw.githubusercontent.com/checkstyle/test-configs/main/Header/Example2/extended-config.xml"; then
-              echo "Successfully downloaded extended-config.xml"
-            else
-              echo "Failed to download extended-config.xml, continuing workflow"
-            fi
+          else
+            echo "No diff_config.xml found, skipping extra-file download."
           fi
-      
-          # Verify downloaded files for debugging
-          echo "Contents of CONFIG_FOLDER:"
-          ls -la "$CONFIG_FOLDER"
 
       - name: Cache config files
         uses: actions/cache@v4
