@@ -432,6 +432,7 @@ jobs:
             # We want to remove the "/config.xml" part so we can get:
             # https://raw.githubusercontent.com/checkstyle/test-configs/main/Header/Example2
             CONFIG_FOLDER_URL="${DIFF_CONFIG_LINK%/*}"
+            cat "${CONFIG_FOLDER_URL}"
       
             echo "Attempting to download 'java.header' from ${CONFIG_FOLDER_URL}/java.header ..."
             curl -fSLo ".ci-temp/config/java.header" \
