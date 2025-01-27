@@ -429,7 +429,8 @@ jobs:
           if [ -n "$DIFF_CONFIG_LINK" ]; then
             FIXED_LINK="${DIFF_CONFIG_LINK//\/refs\/heads/}"
             CONFIG_FOLDER_URL="${FIXED_LINK%/*}"
-            curl --fail-with-body -SLo "$CONFIG_FOLDER/java.header" \
+            # Download directly to .ci-temp
+            curl --fail-with-body -SLo ".ci-temp/java.header" \
               "${CONFIG_FOLDER_URL}/java.header" || true
           fi
 
@@ -438,6 +439,7 @@ jobs:
         with:
           path: |
             .ci-temp/*.xml
+            .ci-temp/*.header
             .ci-temp/projects.yml
             .ci-temp/projects.properties
           key: ${{ env.CACHE_KEY }}-config-files
