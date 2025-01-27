@@ -442,6 +442,11 @@ jobs:
             .ci-temp/projects.yml
             .ci-temp/projects.properties
           key: ${{ env.CACHE_KEY }}-config-files
+          
+      - name: Debug - List cached files
+        run: |
+          echo "Contents of .ci-temp directory:"
+          ls -la .ci-temp/
 
   make_report:
     needs: [ download_configs, checkout_and_cache ]
@@ -462,10 +467,16 @@ jobs:
         with:
           path: |
             .ci-temp/*.xml
+            .ci-temp/*.header
             .ci-temp/projects.yml
             .ci-temp/projects.properties
           key: ${{ env.CACHE_KEY }}-config-files
 
+      - name: Debug - Verify restored cache
+        run: |
+          echo "Contents of restored .ci-temp directory:"
+          ls -la .ci-temp/
+          
       - name: Restore local maven cache
         uses: actions/cache/restore@v4
         with:
