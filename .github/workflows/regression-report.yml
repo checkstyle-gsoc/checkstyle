@@ -415,7 +415,6 @@ jobs:
             || needs.handle_configs_in_pr_description.outputs.projects_link
             || env.DEFAULT_PROJECTS_LINK
             }}
-                || env.DEFAULT_PROJECTS_LINK }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CONFIG_FOLDER: ${{ github.workspace }}/.ci-temp
         run: |
