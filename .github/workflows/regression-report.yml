@@ -419,7 +419,6 @@ jobs:
           CONFIG_FOLDER: ${{ github.workspace }}/.ci-temp
         run: |
           mkdir -p .ci-temp
-          mkdir -p "$CONFIG_FOLDER"
 
           if ! ./.ci/diff-report.sh download-files; then
             ./.ci/append-to-github-output.sh "failed" "true"
