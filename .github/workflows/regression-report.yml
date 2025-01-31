@@ -20,7 +20,7 @@ env:
   DEFAULT_PROJECTS_LINK: "https://raw.githubusercontent.com/checkstyle/test-configs/main/extractor/src/main/resources/list-of-projects.yml"
   BASE_TEST_CONFIGS_URL: "https://raw.githubusercontent.com/checkstyle/test-configs/main"
   EXTRACTOR_VERSION: 2024-10-08
-  DIFF_TOOL_VERSION: "1.0-SNAPSHOT-all"
+  DIFF_TOOL_VERSION: "1.0-2025-01-30"
   PATCH_DIFF_TOOL_VERSION: "0.1-SNAPSHOT"
   CACHE_KEY: "regression-report-${{ github.sha }}-${{ github.event.comment.id }}"
   GENERATED_CONFIGS_PATH: generated_configs
@@ -442,11 +442,6 @@ jobs:
             .ci-temp/projects.yml
             .ci-temp/projects.properties
           key: ${{ env.CACHE_KEY }}-config-files
-          
-      - name: Debug - List cached files
-        run: |
-          echo "Contents of .ci-temp directory:"
-          ls -la .ci-temp/
 
   make_report:
     needs: [ download_configs, checkout_and_cache ]
@@ -472,11 +467,6 @@ jobs:
             .ci-temp/projects.properties
           key: ${{ env.CACHE_KEY }}-config-files
 
-      - name: Debug - Verify restored cache
-        run: |
-          echo "Contents of restored .ci-temp directory:"
-          ls -la .ci-temp/
-          
       - name: Restore local maven cache
         uses: actions/cache/restore@v4
         with:
@@ -486,9 +476,9 @@ jobs:
       - name: Download DiffTool JAR
         uses: robinraju/release-downloader@v1.8
         with:
-          repository: "relentless-pursuit/test-configs"
-          tag: "diff-java-tool-1.0-SNAPSHOT-all"
-          fileName: "diff-java-tool-1.0-SNAPSHOT-all.jar"
+          repository: "checkstyle/test-configs"
+          tag: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}"
+          fileName: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
           out-file-path: ".ci-temp"
 
       - name: Download patch-diff-report-tool JAR
