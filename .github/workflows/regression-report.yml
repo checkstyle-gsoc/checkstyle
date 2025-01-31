@@ -577,7 +577,7 @@ jobs:
           fi
 
           # Paths to the JAR files
-          DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
+          DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}-all.jar"
           PATCH_DIFF_TOOL_JAR="patch-diff-report-tool-\
           ${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar"
 
