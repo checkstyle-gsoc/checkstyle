@@ -416,7 +416,6 @@ jobs:
             || env.DEFAULT_PROJECTS_LINK
             }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CONFIG_FOLDER: ${{ github.workspace }}/.ci-temp
         run: |
           mkdir -p .ci-temp
 
