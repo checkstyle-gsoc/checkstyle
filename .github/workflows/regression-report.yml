@@ -478,7 +478,7 @@ jobs:
         with:
           repository: "checkstyle/test-configs"
           tag: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}"
-          fileName: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
+          fileName: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}-all.jar"
           out-file-path: ".ci-temp"
 
       - name: Download patch-diff-report-tool JAR
